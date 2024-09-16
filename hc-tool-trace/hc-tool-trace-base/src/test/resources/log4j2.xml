@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration monitorInterval="120" status="info">
+    <properties>
+        <property name="log.home">/export/Logs/hc.tools</property>
+        <Property name="consolePatternLayout">%highlight{%d{yyyy-MM-dd HH:mm:ss.SSS} - %X{traceId} [%t] %-5level %logger{1.}:%L - %msg%n}{%throwable{short.fileName}}{STYLE=Logback}
+        </Property>
+        <Property name="logPatternLayout">%d{yyyy-MM-dd HH:mm:ss.SSS} - %X{traceId} [%t] %-5level %logger{1.}:%L -%msg%n
+        </Property>
+        <Property name="rollingLogSize">200 MB</Property>
+        <Property name="rollingLogMaxNum">10</Property>
+        <Property name="log.level">info</Property>
+    </properties>
+
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${consolePatternLayout}"/>
+        </Console>
+
+        <!-- ERROR级别日志 -->
+        <RollingRandomAccessFile fileName="${log.home}/error.log" filePattern="${log.home}/error.%d{yyyyMMdd}-%i.log"
+                                 immediateFlush="false" name="ERROR_FILE">
+            <Filters>
+                <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            </Filters>
+            <PatternLayout pattern="${logPatternLayout}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="${rollingLogSize}"/>
+            </Policies>
+            <DefaultRolloverStrategy max="${rollingLogMaxNum}">
+                <Delete basePath="${log.home}" maxDepth="0">
+                    <IfFileName glob="error.*.log"/>
+                    <IfLastModified age="5D"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingRandomAccessFile>
+
+        <!-- 所有日志 -->
+        <RollingRandomAccessFile fileName="${log.home}/all.log" filePattern="${log.home}/all.%d{yyyyMMdd}-%i.log"
+                                 immediateFlush="false" name="ALL_FILE">
+            <PatternLayout pattern="${logPatternLayout}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="${rollingLogSize}"/>
+            </Policies>
+            <DefaultRolloverStrategy max="${rollingLogMaxNum}">
+                <Delete basePath="${log.home}" maxDepth="0">
+                    <IfFileName glob="all.*.log"/>
+                    <IfLastModified age="5D"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingRandomAccessFile>
+    </Appenders>
+
+    <Loggers>
+        <Logger additivity="false" level="OFF" name="com.jd.epx.config.AppConfListener"/>
+        <Logger additivity="false" level="OFF" name="com.jd.epx.config.Log4j2ConfListener"/>
+
+        <Logger additivity="true" level="INFO" name="com.jd.epx.jsf.filter">
+            <appender-ref ref="JSF_FILE"/>
+        </Logger>
+
+        <Root level="${log.level}">
+            <appender-ref ref="console"/>
+        </Root>
+
+    </Loggers>
+
+</Configuration>
