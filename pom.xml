@@ -17,7 +17,6 @@
     <modules>
         <module>hc-tool-config</module>
         <module>hc-tool-common</module>
-        <module>hc-tool-adapter</module>
         <module>hc-tool-cache</module>
         <module>hc-tool-trace</module>
     </modules>
@@ -83,4 +82,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>

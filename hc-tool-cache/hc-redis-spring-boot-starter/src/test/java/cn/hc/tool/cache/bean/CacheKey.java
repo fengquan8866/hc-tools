@@ -13,6 +13,10 @@ public enum CacheKey implements CacheConf {
     SKU_INFO2("sku_info2", "sku_info2_{0}", TimeConstant.FIVE_MINUTE_OF_SECOND, TimeConstant.ONE_MINUTE_OF_SECOND, TimeConstant.ONE_MINUTE_OF_SECOND),
     ;
 
+    CacheKey(String confKey, String keyExp, int expire) {
+        this(confKey, keyExp, expire, expire, 0);
+    }
+
     CacheKey(String confKey, String keyExp, int expire, int update) {
         this(confKey, keyExp, expire, update, 0);
     }

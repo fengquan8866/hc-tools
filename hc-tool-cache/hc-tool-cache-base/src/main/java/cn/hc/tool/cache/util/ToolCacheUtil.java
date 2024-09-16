@@ -4,6 +4,7 @@ import cn.hc.tool.cache.adapter.CacheAdapter;
 import cn.hc.tool.cache.bean.CacheConf;
 import cn.hc.tool.cache.bean.CacheData;
 import cn.hc.tool.cache.enums.CacheStrategyEnum;
+import cn.hc.tool.cache.exception.ToolCacheException;
 import cn.hc.tool.common.util.SystemClock;
 import cn.hc.tool.config.util.ConfigUtil;
 import com.hc.json.adapter.Json;
@@ -32,30 +33,38 @@ public class ToolCacheUtil {
     @Value("${hc.cache.timeout:2000}")
     private long timeout = 2000;
 
-    public <V, T extends CacheConf> V getWithCache(T cacheKey, Class<V> vClass, Function<T, String> getKeyFunc, Callable<V> reloadTask) throws Exception {
-        return this.getWithCache(cacheKey, (Type) vClass, getKeyFunc, reloadTask);
+    public <V, T extends CacheConf> V getWith(T cacheKey, Function<T, String> getKeyFunc, Callable<V> reloadTask) {
+        return this.getWith(cacheKey, String.class, getKeyFunc, reloadTask);
     }
 
-    public <V, T extends CacheConf> V getWithCache(T cacheKey, Type vClass, Function<T, String> getKeyFunc, Callable<V> reloadTask) throws Exception {
+    public <V, T extends CacheConf> V getWith(T cacheKey, Class<V> vClass, Function<T, String> getKeyFunc, Callable<V> reloadTask) {
+        return this.getWith(cacheKey, (Type) vClass, getKeyFunc, reloadTask);
+    }
+
+    public <V, T extends CacheConf> V getWith(T cacheKey, Type vClass, Function<T, String> getKeyFunc, Callable<V> reloadTask) {
         CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheKey);
         String key = cacheKey.getKeyExp();
         if (getKeyFunc != null) {
             key = getKeyFunc.apply(cacheKey);
         }
-        return getWithCache(cacheDegrade, vClass, key, cacheKey, reloadTask, null);
+        return getWith(cacheDegrade, vClass, key, cacheKey, reloadTask, null);
     }
 
-    public <V> V getWithCache(CacheConf cacheKey, Class<V> vClass, Callable<V> reloadTask, Object... keyParams) throws Exception {
-        return this.getWithCache(cacheKey, (Type) vClass, reloadTask, keyParams);
+    public <V> V getWith(CacheConf cacheKey, Callable<V> reloadTask, Object... keyParams) {
+        return this.getWith(cacheKey, String.class, reloadTask, keyParams);
     }
 
-    public <V> V getWithCache(CacheConf cacheKey, Type vClass, Callable<V> reloadTask, Object... keyParams) throws Exception {
+    public <V> V getWith(CacheConf cacheKey, Class<V> vClass, Callable<V> reloadTask, Object... keyParams) {
+        return this.getWith(cacheKey, (Type) vClass, reloadTask, keyParams);
+    }
+
+    public <V> V getWith(CacheConf cacheKey, Type vClass, Callable<V> reloadTask, Object... keyParams) {
         CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheKey);
-        return getWithCache(cacheDegrade, vClass, cacheKey.getFullCacheKey(keyParams), cacheKey, reloadTask, null);
+        return getWith(cacheDegrade, vClass, cacheKey.getFullCacheKey(keyParams), cacheKey, reloadTask, null);
     }
 
-    public <V, T extends CacheConf> V getWithCache(CacheStrategyEnum cacheDegrade, Type type, String key,
-                                                        T cacheKey, Callable<V> reloadTask, Predicate<V> predicate) throws Exception {
+    public <V, T extends CacheConf> V getWith(CacheStrategyEnum cacheDegrade, Type type, String key,
+                                              T cacheKey, Callable<V> reloadTask, Predicate<V> predicate) {
         // 1、拒绝策略
         if (cacheDegrade == CacheStrategyEnum.REJECT) {
             return null;
@@ -64,7 +73,7 @@ public class ToolCacheUtil {
         int autoUpdateSeconds = cacheKey.getUpdateSeconds();
         // 2、RELOAD策略 或 缓存时间=0，重新加载
         if (cacheDegrade == CacheStrategyEnum.RELOAD_ONLY || seconds == 0) {
-            return reloadTask.call();
+            return call(reloadTask);
         }
         // 3、获取缓存数据
         CacheData<V> cacheData = getCacheData(key, type);
@@ -98,7 +107,7 @@ public class ToolCacheUtil {
      * @param reloadTask 缓存未命中加装数据的任务
      * @param cacheKey   缓存key枚举
      */
-    public <V, T extends CacheConf> V getFromTask(String key, Callable<V> reloadTask, T cacheKey) throws InterruptedException, ExecutionException, TimeoutException {
+    public <V, T extends CacheConf> V getFromTask(String key, Callable<V> reloadTask, T cacheKey) {
         V result;
         boolean isRemove = false;
         try {
@@ -114,13 +123,21 @@ public class ToolCacheUtil {
         } catch (Exception e) {
             printException(key, cacheKey, e);
             if (e instanceof ExecutionException) {
-                throw e;
+                throw new ToolCacheException(e);
             }
             return null;
         } finally {
             if (isRemove) {
                 cacheMap.remove(key);
             }
+        }
+    }
+
+    private <V> V call(Callable<V> reloadTask) {
+        try {
+            return reloadTask.call();
+        } catch (Exception e) {
+            throw new ToolCacheException(e);
         }
     }
 

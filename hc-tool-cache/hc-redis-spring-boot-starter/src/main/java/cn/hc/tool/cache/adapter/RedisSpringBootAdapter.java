@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @Component
 public class RedisSpringBootAdapter implements CacheAdapter {
 
-    @Value("${hc.redis.prefix:")
+    @Value("${hc.redis.prefix:}")
     private String prefix;
 
     @Autowired
