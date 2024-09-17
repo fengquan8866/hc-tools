@@ -1,13 +1,13 @@
 package cn.hc.tool.cache.util;
 
 import cn.hc.tool.cache.bean.CacheKey;
-import cn.hc.tool.cache.conf.HcRedisComponentScanner;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.junit4.SpringRunner;
 
 /**
@@ -15,7 +15,8 @@ import org.springframework.test.context.junit4.SpringRunner;
  * @version 创建时间：2024/9/16 18:27
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {ToolCacheUtilTest.class, HcRedisComponentScanner.class})
+@ComponentScan(basePackages = {"cn.hc.tool.cache"})
+@SpringBootTest(classes = {ToolCacheUtilTest.class})
 @Slf4j
 @EnableAutoConfiguration
 public class ToolCacheUtilTest {
@@ -24,7 +25,7 @@ public class ToolCacheUtilTest {
     private ToolCacheUtil toolCacheUtil;
 
     @Test
-    public void getWith() throws Exception {
+    public void getWith() {
         Integer sku = 1;
         Integer val = toolCacheUtil.getWith(CacheKey.SKU_INFO, Integer.class, () -> {
             if (sku > 0) {

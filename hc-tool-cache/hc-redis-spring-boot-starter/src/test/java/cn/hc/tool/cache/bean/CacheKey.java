@@ -1,6 +1,6 @@
 package cn.hc.tool.cache.bean;
 
-import cn.hc.tool.cache.constant.TimeConstant;
+import cn.hc.tool.cache.constant.Times;
 import lombok.Getter;
 
 /**
@@ -9,8 +9,8 @@ import lombok.Getter;
  */
 @Getter
 public enum CacheKey implements CacheConf {
-    SKU_INFO("sku_info", "sku_info_{0}", TimeConstant.FIVE_MINUTE_OF_SECOND, TimeConstant.ONE_MINUTE_OF_SECOND),
-    SKU_INFO2("sku_info2", "sku_info2_{0}", TimeConstant.FIVE_MINUTE_OF_SECOND, TimeConstant.ONE_MINUTE_OF_SECOND, TimeConstant.ONE_MINUTE_OF_SECOND),
+    SKU_INFO("sku_info", "sku_info_{0}", Times.FIVE_MINUTE, Times.MINUTE),
+    SKU_INFO2("sku_info2", "sku_info2_{0}", Times.FIVE_MINUTE, Times.MINUTE, Times.MINUTE),
     ;
 
     CacheKey(String confKey, String keyExp, int expire) {

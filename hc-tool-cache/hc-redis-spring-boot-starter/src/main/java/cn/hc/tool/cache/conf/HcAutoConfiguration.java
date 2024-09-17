@@ -16,7 +16,6 @@ public class HcAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(value = {ToolCacheUtil.class})
     public ToolCacheUtil hcCacheUtil(RedisSpringBootAdapter redisAdapter) {
-        System.out.println("------------------------------------1111");
         ToolCacheUtil toolCacheUtil = new ToolCacheUtil();
         toolCacheUtil.setCacheAdapter(redisAdapter);
         return toolCacheUtil;
