@@ -28,7 +28,7 @@ public class HcTraceAspect {
      * @param jp 切点
      */
     @Around("@within(cn.hc.tool.trace.aspect.HcTrace)")
-    public Object epxTraceWithinPoint(ProceedingJoinPoint jp) throws Throwable {
+    public Object traceWithinPoint(ProceedingJoinPoint jp) throws Throwable {
         return exec(jp);
     }
 
@@ -36,7 +36,7 @@ public class HcTraceAspect {
      * 注解监控拦截处理方法
      */
     @Around("@annotation(cn.hc.tool.trace.aspect.HcTrace)")
-    public Object epxTraceAnnoPoint(ProceedingJoinPoint jp) throws Throwable {
+    public Object traceAnnoPoint(ProceedingJoinPoint jp) throws Throwable {
         return exec(jp);
     }
 

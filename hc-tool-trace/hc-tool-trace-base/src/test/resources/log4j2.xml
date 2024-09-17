@@ -54,13 +54,6 @@
     </Appenders>
 
     <Loggers>
-        <Logger additivity="false" level="OFF" name="com.jd.epx.config.AppConfListener"/>
-        <Logger additivity="false" level="OFF" name="com.jd.epx.config.Log4j2ConfListener"/>
-
-        <Logger additivity="true" level="INFO" name="com.jd.epx.jsf.filter">
-            <appender-ref ref="JSF_FILE"/>
-        </Logger>
-
         <Root level="${log.level}">
             <appender-ref ref="console"/>
         </Root>

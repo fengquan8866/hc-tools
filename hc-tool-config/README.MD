@@ -1,4 +1,4 @@
-总览见 [epx-tools](../README.MD)
+总览见 [hc-tools](../README.MD)
 
 [TOC]
 
@@ -29,7 +29,7 @@
 
 ### 1.3 公共开关（组件中已包含该常量类）
 ```java
-package com.jd.epx.tool.config.constant;
+package cn.hc.tool.config.constant;
 public class CommonConfig {
     /**
      * 开关-是否走地址转换，默认开启

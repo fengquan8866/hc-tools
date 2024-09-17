@@ -1,8 +1,8 @@
-总览见 [epx-tools](../README.md)
+总览见 [hc-tools](../README.md)
 
 [TOC]
 
-# epx-tool-cache 缓存组件
+# hc-tool-cache 缓存组件
 
 ## 零、方案设计
 * 1、默认策略简版
@@ -337,7 +337,7 @@ public <T, E extends Exception> T execute(CacheConf cacheInterface, Func<T> call
 ```
 * 使用示例
 ```java
-Long val = epxLockUtil.execute(CacheKey.LOCK_INIT_BIZ_ORG, () -> bizOrgService.initBizOrg(req),
+Long val = toolLockUtil.execute(CacheKey.LOCK_INIT_BIZ_ORG, () -> bizOrgService.initBizOrg(req),
                 req.getAccountId());
 ```
 
