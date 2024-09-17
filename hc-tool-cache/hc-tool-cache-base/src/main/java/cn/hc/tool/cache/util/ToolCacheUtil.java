@@ -5,6 +5,8 @@ import cn.hc.tool.cache.bean.CacheConf;
 import cn.hc.tool.cache.bean.CacheData;
 import cn.hc.tool.cache.enums.CacheStrategyEnum;
 import cn.hc.tool.cache.exception.ToolCacheException;
+import cn.hc.tool.common.util.CollectionUtil;
+import cn.hc.tool.common.util.MapUtil;
 import cn.hc.tool.common.util.SystemClock;
 import cn.hc.tool.config.util.ConfigUtil;
 import com.hc.json.adapter.Json;
@@ -14,8 +16,9 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -33,47 +36,76 @@ public class ToolCacheUtil {
     @Value("${hc.cache.timeout:2000}")
     private long timeout = 2000;
 
-    public <V, T extends CacheConf> V getWith(T cacheKey, Function<T, String> getKeyFunc, Callable<V> reloadTask) {
-        return this.getWith(cacheKey, String.class, getKeyFunc, reloadTask);
+    @Deprecated
+    public <V, T extends CacheConf> V get(T cacheConf, Callable<V> reloadTask, Function<T, String> keyFunc) {
+        return this.get(cacheConf, String.class, reloadTask, keyFunc);
     }
 
-    public <V, T extends CacheConf> V getWith(T cacheKey, Class<V> vClass, Function<T, String> getKeyFunc, Callable<V> reloadTask) {
-        return this.getWith(cacheKey, (Type) vClass, getKeyFunc, reloadTask);
+    @Deprecated
+    public <V, T extends CacheConf> V get(T cacheConf, Class<V> vClass, Callable<V> reloadTask, Function<T, String> keyFunc) {
+        return this.get(cacheConf, (Type) vClass, reloadTask, keyFunc);
     }
 
-    public <V, T extends CacheConf> V getWith(T cacheKey, Type vClass, Function<T, String> getKeyFunc, Callable<V> reloadTask) {
-        CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheKey);
-        String key = cacheKey.getKeyExp();
-        if (getKeyFunc != null) {
-            key = getKeyFunc.apply(cacheKey);
+    @Deprecated
+    public <V, T extends CacheConf> V get(T cacheConf, Type vClass, Callable<V> reloadTask, Function<T, String> keyFunc) {
+        CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);
+        String key = cacheConf.getKeyExp();
+        if (keyFunc != null) {
+            key = keyFunc.apply(cacheConf);
         }
-        return getWith(cacheDegrade, vClass, key, cacheKey, reloadTask, null);
+        return this.get(cacheDegrade, vClass, key, cacheConf, reloadTask, null);
     }
 
-    public <V> V getWith(CacheConf cacheKey, Callable<V> reloadTask, Object... keyParams) {
-        return this.getWith(cacheKey, String.class, reloadTask, keyParams);
+    public String get(CacheConf cacheConf, Callable<String> reloadTask, Object... keyParams) {
+        return this.get(cacheConf, String.class, reloadTask, keyParams);
     }
 
-    public <V> V getWith(CacheConf cacheKey, Class<V> vClass, Callable<V> reloadTask, Object... keyParams) {
-        return this.getWith(cacheKey, (Type) vClass, reloadTask, keyParams);
+    /**
+     * @param cacheConf  缓存key枚举
+     * @param vClass     返回类型
+     * @param reloadTask 缓存未命中加装数据的任务
+     * @param keyParams  生成完整缓存key需要的参数
+     * @param <V>        返回结果数据类型
+     * @return 结果
+     */
+    public <V> V get(CacheConf cacheConf, Class<V> vClass, Callable<V> reloadTask, Object... keyParams) {
+        return this.get(cacheConf, (Type) vClass, reloadTask, keyParams);
     }
 
-    public <V> V getWith(CacheConf cacheKey, Type vClass, Callable<V> reloadTask, Object... keyParams) {
-        CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheKey);
-        return getWith(cacheDegrade, vClass, cacheKey.getFullCacheKey(keyParams), cacheKey, reloadTask, null);
+    public <V> V get(CacheConf cacheConf, Type vClass, Callable<V> reloadTask, Object... keyParams) {
+        CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);
+        return this.get(cacheDegrade, vClass, cacheConf.getFullCacheKey(keyParams), cacheConf, reloadTask, null);
     }
 
-    public <V, T extends CacheConf> V getWith(CacheStrategyEnum cacheDegrade, Type type, String key,
-                                              T cacheKey, Callable<V> reloadTask, Predicate<V> predicate) {
+    public <V> V get(CacheConf cacheConf, Class<V> vClass, Callable<V> reloadTask, Predicate<V> predicate, Object... keyParams) {
+        return this.get(cacheConf, (Type) vClass, reloadTask, predicate, keyParams);
+    }
+
+    /**
+     * @param cacheConf  缓存key枚举
+     * @param vClass     返回类型
+     * @param reloadTask 缓存未命中加装数据的任务
+     * @param predicate  是否缓存子句
+     * @param keyParams  生成完整缓存key需要的参数
+     * @param <V>        返回结果数据类型
+     * @return 结果
+     */
+    public <V> V get(CacheConf cacheConf, Type vClass, Callable<V> reloadTask, Predicate<V> predicate, Object... keyParams) {
+        CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);
+        return this.get(cacheDegrade, vClass, cacheConf.getFullCacheKey(keyParams), cacheConf, reloadTask, predicate);
+    }
+
+    public <V, T extends CacheConf> V get(CacheStrategyEnum cacheDegrade, Type type, String key,
+                                          T cacheConf, Callable<V> reloadTask, Predicate<V> predicate) {
         // 1、拒绝策略
         if (cacheDegrade == CacheStrategyEnum.REJECT) {
             return null;
         }
-        int seconds = cacheKey.getExpireSeconds();
-        int autoUpdateSeconds = cacheKey.getUpdateSeconds();
+        int seconds = cacheConf.getExpireSeconds();
+        int autoUpdateSeconds = cacheConf.getUpdateSeconds();
         // 2、RELOAD策略 或 缓存时间=0，重新加载
         if (cacheDegrade == CacheStrategyEnum.RELOAD_ONLY || seconds == 0) {
-            return call(reloadTask);
+            return this.call(reloadTask);
         }
         // 3、获取缓存数据
         CacheData<V> cacheData = getCacheData(key, type);
@@ -87,7 +119,7 @@ public class ToolCacheUtil {
         // 4、未降级策略，执行reload任务，更新缓存
         if (cacheDegrade == CacheStrategyEnum.ALL_OPEN) {
             log.info("缓存穿透，开始重新加载数据，key：{}", key);
-            V result = getFromTask(key, reloadTask, cacheKey);
+            V result = getFromTask(key, reloadTask, cacheConf);
             saveCache(result, key, seconds, predicate);
             return result;
         }
@@ -99,15 +131,424 @@ public class ToolCacheUtil {
         return null;
     }
 
+    @Deprecated
+    public <V, P> List<V> getFromList(CacheConf cacheConf, Class<V> vClass, Function<List<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, List<P> keyParams) {
+        return this.getFromList(cacheConf, (Type) vClass, reloadTask, keyFunc, keyParams);
+    }
+
+    @Deprecated
+    public <V, P> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, List<P> keyParams) {
+        return getFromList(cacheConf, vClass, reloadTask, keyFunc, null, keyParams);
+    }
+
+    /**
+     * 批量缓存
+     *
+     * @param cacheConf  缓存key枚举
+     * @param vClass     返回类型
+     * @param reloadTask 缓存未命中加装数据的任务
+     * @param keyParams  生成完整缓存key需要的参数
+     * @param <K>        加载任务的入参类型
+     * @param <V>        返回结果数据类型
+     * @return List结果集
+     */
+    public <K, V> List<V> getFromList(CacheConf cacheConf, Class<V> vClass, Function<List<K>, List<V>> reloadTask, List<K> keyParams) {
+        return this.getFromList(cacheConf, (Type) vClass, reloadTask, (k, v) -> new Object[]{k}, keyParams);
+    }
+
+    /**
+     * 批量缓存
+     *
+     * @param cacheConf  缓存key枚举
+     * @param vClass     返回类型
+     * @param reloadTask 缓存未命中加装数据的任务
+     * @param keyFunc    生成缓存key的构造参数
+     * @param keyParams  生成完整缓存key需要的参数
+     * @param <K>        加载任务的入参类型
+     * @param <V>        返回结果数据类型
+     * @return List结果集
+     */
+    public <K, V> List<V> getFromList(CacheConf cacheConf, Class<V> vClass, Function<List<K>, List<V>> reloadTask, BiFunction<K, V, Object[]> keyFunc, List<K> keyParams) {
+        return this.getFromList(cacheConf, (Type) vClass, reloadTask, keyFunc, keyParams);
+    }
+
+    @Deprecated
+    public <V, P> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, Predicate<V> predicate, List<P> keyParams) {
+        return this.getFromList(cacheConf, vClass, reloadTask, (k, v) -> keyFunc.apply(v), predicate, keyParams);
+    }
+
+    public <V, P> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<P>, List<V>> reloadTask, BiFunction<P, V, Object[]> keyFunc, List<P> keyParams) {
+        return getFromList(cacheConf, vClass, reloadTask, keyFunc, null, keyParams);
+    }
+
+    public <V, P> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<P>, List<V>> reloadTask, BiFunction<P, V, Object[]> keyFunc, Predicate<V> predicate, List<P> keyParams) {
+        CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);
+        if (cacheDegrade == CacheStrategyEnum.RELOAD_ONLY || cacheConf.getExpireSeconds() == 0) {
+            return reloadTask.apply(keyParams);
+        }
+        List<V> res = new ArrayList<>(); // 结果集
+        List<P> ks = new ArrayList<>(); // 未缓存的数据
+//        List<T> reloadList = new ArrayList<>(); // TODO 批量更新
+        for (final P k : keyParams) {
+            String key = cacheConf.getFullCacheKey(k);
+            CacheData<V> cacheData = getCacheData(key, vClass);
+            if (cacheData == null) {
+                ks.add(k);
+            } else {
+                if (cacheDegrade != CacheStrategyEnum.CACHE_ONLY) {
+//                    reloadList.add(k);
+                    try {
+                        List<P> reloadParam = newList(keyParams);
+                        reloadParam.add(k);
+                        updateCacheIfNeed(cacheData, key, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), () -> {
+//                            log.warn("刷新数据： {}", k);
+                            List<V> resList = reloadTask.apply(reloadParam);
+                            return CollectionUtil.isEmpty(resList) ? null : resList.get(0);
+                        }, predicate);
+                    } catch (Exception e) {
+                        log.error("error in getWithCacheList add reloadParam", e);
+                    }
+                }
+                res.add(cacheData.getData());
+            }
+        }
+        if (!ks.isEmpty()) {
+            if (cacheDegrade != CacheStrategyEnum.ALL_OPEN) {
+                return res;
+            }
+            log.info("缓存穿透，开始从新加载数据，ks：{}", ks);
+            List<V> loadList = reloadTask.apply(ks);
+            res.addAll(loadList);
+            int i = 0;
+            for (V e : loadList) {
+                String key = cacheConf.getFullCacheKey(keyFunc.apply(ks.get(i++), e));
+                saveCache(e, key, cacheConf.getExpireSeconds(), predicate);
+            }
+        }
+        return res;
+    }
+
+    @Deprecated
+    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, Set<P> keyParams) {
+        return this.getListFromSet(cacheConf, (Type) vClass, reloadTask, keyFunc, keyParams);
+    }
+
+    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, List<V>> reloadTask, Set<P> keyParams) {
+        return this.getListFromSet(cacheConf, (Type) vClass, reloadTask, (k, v) -> new Object[]{k}, keyParams);
+    }
+
+    /**
+     * 批量缓存
+     *
+     * @param cacheConf  缓存key枚举
+     * @param vClass     返回类型
+     * @param reloadTask 缓存未命中加装数据的任务
+     * @param keyFunc    生成缓存key的方法
+     * @param keyParams  生成完整缓存key需要的参数
+     * @param <K>        加载任务的入参类型
+     * @param <V>        返回结果数据类型
+     */
+    public <K, V> List<V> getListFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<K>, List<V>> reloadTask, BiFunction<K, V, Object[]> keyFunc, Set<K> keyParams) {
+        return this.getListFromSet(cacheConf, (Type) vClass, reloadTask, keyFunc, keyParams);
+    }
+
+    @Deprecated
+    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, Set<P> keyParams) {
+        return getListFromSet(cacheConf, vClass, reloadTask, keyFunc, null, keyParams);
+    }
+
+    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, List<V>> reloadTask, BiFunction<P, V, Object[]> keyFunc, Set<P> keyParams) {
+        return getListFromSet(cacheConf, vClass, reloadTask, keyFunc, null, keyParams);
+    }
+
+    @Deprecated
+    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, Predicate<V> predicate, Set<P> keyParams) {
+        return this.getListFromSet(cacheConf, (Type) vClass, reloadTask, keyFunc, predicate, keyParams);
+    }
+
+    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, List<V>> reloadTask, BiFunction<P, V, Object[]> keyFunc, Predicate<V> predicate, Set<P> keyParams) {
+        return this.getListFromSet(cacheConf, (Type) vClass, reloadTask, keyFunc, predicate, keyParams);
+    }
+
+    @Deprecated
+    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, Predicate<V> predicate, Set<P> keyParams) {
+        return this.getListFromSet(cacheConf, vClass, reloadTask, (k, v) -> keyFunc.apply(v), predicate, keyParams);
+    }
+
+    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, List<V>> reloadTask, BiFunction<P, V, Object[]> keyFunc, Predicate<V> predicate, Set<P> keyParams) {
+        CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);
+        if (cacheDegrade == CacheStrategyEnum.RELOAD_ONLY || cacheConf.getExpireSeconds() == 0) {
+            return reloadTask.apply(keyParams);
+        }
+        List<V> res = new ArrayList<>(); // 结果集
+        Set<P> ks = new LinkedHashSet<>(); // 未缓存的数据
+//        List<T> reloadList = new ArrayList<>(); // TODO 批量更新
+        for (P k : keyParams) {
+            String key = cacheConf.getFullCacheKey(k);
+            CacheData<V> cacheData = getCacheData(key, vClass);
+            if (cacheData == null) {
+                ks.add(k);
+            } else {
+                if (cacheDegrade != CacheStrategyEnum.CACHE_ONLY) {
+//                    reloadList.add(k);
+                    try {
+                        Set<P> reloadParam = newSet(keyParams);
+                        reloadParam.add(k);
+                        updateCacheIfNeed(cacheData, key, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), () -> {
+                            List<V> resList = reloadTask.apply(reloadParam);
+                            return CollectionUtil.isEmpty(resList) ? null : resList.get(0);
+                        }, predicate);
+                    } catch (Exception e) {
+                        log.error("error in getListWithCacheSet add reloadParam", e);
+                    }
+                }
+                res.add(cacheData.getData());
+            }
+        }
+        if (!ks.isEmpty()) {
+            if (cacheDegrade != CacheStrategyEnum.ALL_OPEN) {
+                return res;
+            }
+            log.info("缓存穿透，开始从新加载数据，ks：{}", ks);
+            List<V> loadList = reloadTask.apply(ks);
+            res.addAll(loadList);
+            int i = 0;
+            for (P p : ks) {
+                V e = loadList.get(i++);
+                String key = cacheConf.getFullCacheKey(keyFunc.apply(p, e));
+                saveCache(e, key, cacheConf.getExpireSeconds(), predicate);
+            }
+        }
+        return res;
+    }
+
+    /**
+     * 批量缓存
+     *
+     * @param cacheConf  缓存key枚举
+     * @param vClass     返回类型
+     * @param reloadTask 缓存未命中加装数据的任务
+     * @param keyParams  生成完整缓存key需要的参数
+     * @param <V>        返回结果数据类型
+     * @param <K>        加载任务的入参类型
+     * @return Map<K, V>
+     */
+    public <K, V> Map<K, V> getMapFromList(CacheConf cacheConf, Class<V> vClass, Function<List<K>, Map<K, V>> reloadTask,
+                                           List<K> keyParams) {
+        return this.getMapFromList(cacheConf, (Type) vClass, reloadTask, keyParams);
+    }
+
+    public <K, V> Map<K, V> getMapFromList(CacheConf cacheConf, Type vClass, Function<List<K>, Map<K, V>> reloadTask,
+                                           List<K> keyParams) {
+        return this.getMapFromList(cacheConf, vClass, reloadTask, (k, v) -> k, (k, v) -> new Object[]{k}, keyParams);
+    }
+
+    public <K, V, P> Map<K, V> getMapFromList(CacheConf cacheConf, Class<V> vClass, Function<List<P>, Map<K, V>> reloadTask,
+                                              BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
+                                              List<P> keyParams) {
+        return this.getMapFromList(cacheConf, (Type) vClass, reloadTask, mapKeyFunc, cacheKeyFunc, keyParams);
+    }
+
+    /**
+     * 批量缓存
+     *
+     * @param cacheConf    缓存key枚举
+     * @param vClass       返回类型
+     * @param reloadTask   缓存未命中加装数据的任务
+     * @param mapKeyFunc   生成map key的方法
+     * @param cacheKeyFunc 生成缓存key的方法
+     * @param keyParams    生成完整缓存key需要的参数
+     * @param <V>          返回结果数据类型
+     * @param <P>          加载任务的入参类型
+     * @param <K>          map的key类型
+     * @return Map<K, V>
+     */
+    public <V, P, K> Map<K, V> getMapFromList(CacheConf cacheConf, Type vClass, Function<List<P>, Map<K, V>> reloadTask,
+                                              BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
+                                              List<P> keyParams) {
+        return getMapFromList(cacheConf, vClass, reloadTask, mapKeyFunc, cacheKeyFunc, null, keyParams);
+    }
+
+    /**
+     * 批量缓存
+     *
+     * @param cacheConf    缓存key枚举
+     * @param vClass       返回类型
+     * @param reloadTask   缓存未命中加装数据的任务
+     * @param mapKeyFunc   生成map key的方法
+     * @param cacheKeyFunc 生成缓存key的方法
+     * @param predicate    是否缓存子句
+     * @param keyParams    生成完整缓存key需要的参数
+     * @param <V>          返回结果数据类型
+     * @param <P>          加载任务的入参类型
+     * @param <K>          map的key类型
+     * @return Map<K, V>
+     */
+    public <V, P, K> Map<K, V> getMapFromList(CacheConf cacheConf, Class<V> vClass, Function<List<P>, Map<K, V>> reloadTask,
+                                              BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
+                                              Predicate<V> predicate, List<P> keyParams) {
+        return this.getMapFromList(cacheConf, (Type) vClass, reloadTask, mapKeyFunc, cacheKeyFunc, predicate, keyParams);
+    }
+
+    public <V, P, K> Map<K, V> getMapFromList(CacheConf cacheConf, Type vClass, Function<List<P>, Map<K, V>> reloadTask,
+                                              BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
+                                              Predicate<V> predicate, List<P> keyParams) {
+        CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);
+        if (cacheDegrade == CacheStrategyEnum.RELOAD_ONLY || cacheConf.getExpireSeconds() == 0) {
+            return reloadTask.apply(keyParams);
+        }
+        Map<K, V> res = new LinkedHashMap<>(); // 结果集
+        List<P> ks = new LinkedList<>(); // 未缓存的数据
+        for (P p : keyParams) {
+            String cacheK = cacheConf.getFullCacheKey(p);
+            CacheData<V> cacheData = getCacheData(cacheK, vClass);
+            if (cacheData == null) {
+                ks.add(p);
+            } else {
+                if (cacheDegrade != CacheStrategyEnum.CACHE_ONLY) {
+                    try {
+                        List<P> reloadParam = newList(keyParams);
+                        reloadParam.add(p);
+                        updateCacheIfNeed(cacheData, cacheK, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), () -> {
+                            Map<K, V> resMap = reloadTask.apply(reloadParam);
+                            return MapUtil.isEmpty(resMap) ? null : new ArrayList<>(resMap.values()).get(0);
+                        }, predicate);
+                    } catch (Exception e) {
+                        log.error("error in getMapWithCacheList add reloadParam", e);
+                    }
+                }
+                res.put(mapKeyFunc.apply(p, cacheData.getData()), cacheData.getData());
+            }
+        }
+        if (!ks.isEmpty()) {
+            if (cacheDegrade != CacheStrategyEnum.ALL_OPEN) {
+                return res;
+            }
+            log.info("缓存穿透，开始从新加载数据，ks：{}", ks);
+            Map<K, V> loadMap = reloadTask.apply((List<P>) ks);
+            if (MapUtil.isEmpty(loadMap)) {
+                return res;
+            }
+            res.putAll(loadMap);
+            for (Map.Entry<K, V> e : loadMap.entrySet()) {
+                String key = cacheConf.getFullCacheKey(cacheKeyFunc.apply(e.getKey(), e.getValue()));
+                saveCache(e.getValue(), key, cacheConf.getExpireSeconds(), predicate);
+            }
+        }
+        return res;
+    }
+
+    /**
+     * 批量缓存
+     *
+     * @param cacheConf    缓存key枚举
+     * @param vClass       返回类型
+     * @param reloadTask   缓存未命中加装数据的任务
+     * @param keyParams    生成完整缓存key需要的参数
+     * @param <V>          返回结果数据类型
+     * @param <K>          map的key类型
+     * @return Map<K, V>
+     */
+    public <K, V> Map<K, V> getMapFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<K>, Map<K, V>> reloadTask,
+                                          Set<K> keyParams) {
+        return this.getMapFromSet(cacheConf, (Type) vClass, reloadTask, keyParams);
+    }
+
+    public <V, P, K> Map<K, V> getMapFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, Map<K, V>> reloadTask,
+                                             BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
+                                             Set<P> keyParams) {
+        return this.getMapFromSet(cacheConf, (Type) vClass, reloadTask, mapKeyFunc, cacheKeyFunc, keyParams);
+    }
+
+    public <V, K> Map<K, V> getMapFromSet(CacheConf cacheConf, Type vClass, Function<Set<K>, Map<K, V>> reloadTask,
+                                          Set<K> keyParams) {
+        return getMapFromSet(cacheConf, vClass, reloadTask, (k, v) -> k, (k, v) -> new Object[]{k}, null, keyParams);
+    }
+
+    public <V, P, K> Map<K, V> getMapFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, Map<K, V>> reloadTask,
+                                             BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
+                                             Set<P> keyParams) {
+        return getMapFromSet(cacheConf, vClass, reloadTask, mapKeyFunc, cacheKeyFunc, null, keyParams);
+    }
+
+    public <V, P, K> Map<K, V> getMapFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, Map<K, V>> reloadTask,
+                                             BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
+                                             Predicate<V> predicate, Set<P> keyParams) {
+        return this.getMapFromSet(cacheConf, (Type) vClass, reloadTask, mapKeyFunc, cacheKeyFunc, predicate, keyParams);
+    }
+
+    /**
+     * 批量缓存
+     *
+     * @param cacheConf    缓存key枚举
+     * @param vClass       返回类型
+     * @param reloadTask   缓存未命中加装数据的任务
+     * @param mapKeyFunc   生成map key的方法
+     * @param cacheKeyFunc 生成缓存key的方法
+     * @param predicate    是否缓存子句
+     * @param keyParams    生成完整缓存key需要的参数
+     * @param <V>          返回结果数据类型
+     * @param <P>          加载任务的入参类型
+     * @param <K>          map的key类型
+     * @return Map<K, V>
+     */
+    public <V, P, K> Map<K, V> getMapFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, Map<K, V>> reloadTask,
+                                             BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
+                                             Predicate<V> predicate, Set<P> keyParams) {
+        CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);
+        if (cacheDegrade == CacheStrategyEnum.RELOAD_ONLY || cacheConf.getExpireSeconds() == 0) {
+            return reloadTask.apply(keyParams);
+        }
+        Map<K, V> res = new LinkedHashMap<>(); // 结果集
+        Set<P> ks = new LinkedHashSet<>(); // 未缓存的数据
+        for (P p : keyParams) {
+            String cacheK = cacheConf.getFullCacheKey(p);
+            CacheData<V> cacheData = getCacheData(cacheK, vClass);
+            if (cacheData == null) {
+                ks.add(p);
+            } else {
+                if (cacheDegrade != CacheStrategyEnum.CACHE_ONLY) {
+                    try {
+                        Set<P> reloadParam = newSet(keyParams);
+                        reloadParam.add(p);
+                        updateCacheIfNeed(cacheData, cacheK, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), () -> {
+                            Map<K, V> resMap = reloadTask.apply(reloadParam);
+                            return MapUtil.isEmpty(resMap) ? null : new ArrayList<>(resMap.values()).get(0);
+                        }, predicate);
+                    } catch (Exception e) {
+                        log.error("error in getMapWithCacheSet add reloadParam", e);
+                    }
+                }
+                res.put(mapKeyFunc.apply(p, cacheData.getData()), cacheData.getData());
+            }
+        }
+        if (!ks.isEmpty()) {
+            if (cacheDegrade != CacheStrategyEnum.ALL_OPEN) {
+                return res;
+            }
+            log.info("缓存穿透，开始从新加载数据，ks：{}", ks);
+            Map<K, V> loadMap = reloadTask.apply(ks);
+            if (MapUtil.isEmpty(loadMap)) {
+                return res;
+            }
+            res.putAll(loadMap);
+            for (Map.Entry<K, V> e : loadMap.entrySet()) {
+                String key = cacheConf.getFullCacheKey(cacheKeyFunc.apply(e.getKey(), e.getValue()));
+                saveCache(e.getValue(), key, cacheConf.getExpireSeconds(), predicate);
+            }
+        }
+        return res;
+    }
+
     /**
      * 从缓存获取，或者加载数据后更新缓存,序列化方式采用JSON
      *
      * @param <V>        缓存配置
      * @param key        缓存key
      * @param reloadTask 缓存未命中加装数据的任务
-     * @param cacheKey   缓存key枚举
+     * @param cacheConf  缓存key枚举
      */
-    public <V, T extends CacheConf> V getFromTask(String key, Callable<V> reloadTask, T cacheKey) {
+    public <V, T extends CacheConf> V getFromTask(String key, Callable<V> reloadTask, T cacheConf) {
         V result;
         boolean isRemove = false;
         try {
@@ -121,7 +562,7 @@ public class ToolCacheUtil {
             result = futureValue.get(timeout, TimeUnit.MILLISECONDS);
             return result;
         } catch (Exception e) {
-            printException(key, cacheKey, e);
+            printException(key, cacheConf, e);
             if (e instanceof ExecutionException) {
                 throw new ToolCacheException(e);
             }
@@ -226,7 +667,7 @@ public class ToolCacheUtil {
      * 2:只从reloadTask获取数据
      * 3:只从缓存获取数据
      */
-    private CacheStrategyEnum getDegradeSwitch(CacheConf cacheKey) {
+    private CacheStrategyEnum getDegradeSwitch(CacheConf cacheConf) {
         CacheStrategyEnum degrade = CacheStrategyEnum.getStrategy(ConfigUtil.getInteger("APPLICATION_CACHE_SWITCH"));
         if (degrade == CacheStrategyEnum.RELOAD_ONLY) {
             log.info("已全局关闭缓存开关");
@@ -235,7 +676,7 @@ public class ToolCacheUtil {
             log.info("已开启开关：全局只走缓存，不查rpc");
             return degrade;
         }
-        String switchKey = cacheKey.getConfKey();
+        String switchKey = cacheConf.getConfKey();
         Integer keyDegrade = ConfigUtil.getInteger(switchKey);
         if (keyDegrade == null) {
             return degrade;
@@ -252,19 +693,37 @@ public class ToolCacheUtil {
     /**
      * 异常打印
      *
-     * @param key      异常的key
-     * @param cacheKey 缓存key枚举
-     * @param e        异常
-     * @param <T>      缓存配置泛型
+     * @param key       异常的key
+     * @param cacheConf 缓存key枚举
+     * @param e         异常
+     * @param <T>       缓存配置泛型
      */
-    private <T extends CacheConf> void printException(String key, T cacheKey, Exception e) {
-        Set<String> ignorePrintException = cacheKey.getIgnorePrintException();
+    private <T extends CacheConf> void printException(String key, T cacheConf, Exception e) {
+        Set<String> ignorePrintException = cacheConf.getIgnorePrintException();
         if (ignorePrintException != null &&
                 (ignorePrintException.contains(e.getClass().getName()) || ignorePrintException.contains(e.getClass().getSimpleName())
                         || (e.getCause() != null && e.getCause() instanceof ExecutionException && (ignorePrintException.contains(e.getCause().getClass().getName()) || ignorePrintException.contains(e.getCause().getClass().getSimpleName()))))) {
             log.error("getFromTask error,key={},e={}", key, e.getMessage());
         } else {
             log.error("getFromTask error,key={}", key, e);
+        }
+    }
+
+    private <P> List<P> newList(List<P> params) {
+        try {
+            return params.getClass().newInstance();
+        } catch (Exception e) {
+            log.error("error in newList: {}, {}", params.getClass(), e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    private <P> Set<P> newSet(Set<P> params) {
+        try {
+            return params.getClass().newInstance();
+        } catch (Exception e) {
+            log.error("error in newList: {}, {}", params.getClass(), e.getMessage());
+            return new LinkedHashSet<>();
         }
     }
 

@@ -1,8 +1,8 @@
 package cn.hc.tool.cache.util;
 
 import cn.hc.tool.cache.bean.CacheConf;
+import cn.hc.tool.cache.exception.ToolCacheException;
 import cn.hc.tool.common.exception.HcToolException;
-import cn.hc.tool.common.util.SilentUtil;
 import cn.hc.tool.trace.util.TraceFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +34,7 @@ public class ToolLockUtil {
      * @param cacheConf 缓存配置
      * @param callback  方法体
      * @param error     生成指定异常的方法体
+     * @param keyParams 生成完整缓存key需要的参数
      * @param <T>       泛型
      * @return 方法体执行结果
      */
@@ -51,7 +52,7 @@ public class ToolLockUtil {
                 return callback.call();
             } catch (Exception e) {
                 log.error("回调函数执行失败", e);
-                throw SilentUtil.throwRuntimeException(e);
+                throw new ToolCacheException(e);
             } finally {
                 toolDCSLock.unLock(cacheConf, traceId, keyParams);
             }
