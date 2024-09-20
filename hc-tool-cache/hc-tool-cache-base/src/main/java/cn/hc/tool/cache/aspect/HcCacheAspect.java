@@ -39,11 +39,21 @@ public class HcCacheAspect {
 
     private final DefaultParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
-    private static final Set<String> set = new HashSet<String>(){{
-        add(Integer.class.getName());
-        add(Long.class.getName());
-        add(String.class.getName());
-    }};
+    private static final Set<String> SET = new HashSet<String>() {
+        private static final long serialVersionUID = 2915055647346469550L;
+
+        {
+            add(Byte.class.getName());
+            add(Short.class.getName());
+            add(Integer.class.getName());
+            add(Long.class.getName());
+            add(Float.class.getName());
+            add(Double.class.getName());
+            add(Character.class.getName());
+            add(Boolean.class.getName());
+            add(String.class.getName());
+        }
+    };
 
     @Autowired(required = false)
     private ToolCacheUtil toolCacheUtil;
@@ -78,19 +88,13 @@ public class HcCacheAspect {
         CacheConf cacheConf = CacheConf.confMap.get(hcCache.conf());
         if (cacheConf == null) return jp.proceed();
         Parameter[] parameters = method.getParameters();
-        for (int i = 0; i < parameters.length; i++) {
-            log.info("param{}:{}", i, parameters[i].getName());
-        }
         // 获取方法入参数据
         Object[] args = jp.getArgs();
-        for (int i = 0; i < args.length; i++) {
-            log.info("arg{}: {}", i, args[i]);
-        }
         String key = null;
         if (parameters.length > 0) {
             // 如果key为空，有一个级别类型，默认key=该基本类型
             if (StringUtil.isEmpty(hcCache.key()) && parameters.length == 1
-                    && (parameters[0].getType().isPrimitive() || set.contains(parameters[0].getType().getName()))) {
+                    && (parameters[0].getType().isPrimitive() || SET.contains(parameters[0].getType().getName()))) {
                 key = Objects.toString(args[0]);
             } else if (!StringUtil.isEmpty(hcCache.key())) {
                 key = evaluateExpression(hcCache.key(), jp);
@@ -104,15 +108,10 @@ public class HcCacheAspect {
                 throw new ToolCacheException(e);
             }
         };
-//        CacheMethod msd = hcCache.method();
-//        if (Objects.equals(msd, CacheMethod.get)) {
         if (key == null) {
             return toolCacheUtil.get(cacheConf, method.getGenericReturnType(), callable);
         }
-            return toolCacheUtil.get(cacheConf, method.getGenericReturnType(), callable, key);
-//        } else if (Objects.equals(msd, CacheMethod.getFromList)) {
-//            return toolCacheUtil.getFromList(cacheConf, method.getGenericReturnType(), callable, args)
-//        }
+        return toolCacheUtil.get(cacheConf, method.getGenericReturnType(), callable, key);
     }
 
     /**
@@ -134,6 +133,7 @@ public class HcCacheAspect {
         Expression exp = spelExpressionParser.parseExpression(expression);
         return exp.getValue(context, String.class);
     }
+
     private Method getMethod(JoinPoint jp) {
         Signature signature = jp.getSignature();
         if (signature instanceof MethodSignature) {

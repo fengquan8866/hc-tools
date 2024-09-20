@@ -24,7 +24,7 @@ public class TraceFilter extends OncePerRequestFilter  {
         if (traceId == null) {
             TraceFactory.initTrace();
         } else {
-            TraceFactory.setTraceId(TraceFactory.incrIfExistPart(traceId));
+            TraceFactory.setTraceId(traceId);
         }
         // 返回带上traceId
         response.addHeader(TRACE_ID, TraceFactory.traceId());

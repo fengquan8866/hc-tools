@@ -76,13 +76,14 @@ public class TraceFactory {
 
     /**
      * 递增traceId尾部数字，如果traceId尾部数字为空，则不处理
-     * 示例：入参 traceId = aaaaaa-1，则返回aaaaaa-2
+     * 示例1：入参 traceId = aaaaaa，则返回aaaaaa-2
+     * 示例2：入参 traceId = aaaaaa-1，则返回aaaaaa-2
      */
     public static String incrIfExistPart(String traceId) {
         int idx = traceId.lastIndexOf('-');
-        if (idx >= traceId.length() - 1) return traceId;
+        if (idx <= 0 || idx >= traceId.length() - 1) return traceId + "-2";
         String part = traceId.substring(idx + 1);
-        if (!NumberUtil.isNum(part)) return traceId;
+        if (!NumberUtil.isNum(part)) return traceId + "-2";
         return traceId.substring(0, idx + 1) + (NumberUtil.toInt(part) + 1);
     }
 

@@ -15,6 +15,7 @@
     <modules>
         <module>hc-tool-trace-base</module>
         <module>hc-tool-web-trace-starter</module>
+        <module>hc-tool-feign-trace-starter</module>
     </modules>
 
     <properties>
@@ -22,6 +23,16 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>cn.hc</groupId>
+                <artifactId>hc-tool-web-trace-starter</artifactId>
+                <version>${hc.tools.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
