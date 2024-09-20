@@ -55,6 +55,9 @@ public enum CacheKey implements CacheConf {
   SKU_INFO("sku_info", "sku_info_{0}", TimeConstant.FIVE_MINUTE_OF_SECOND, TimeConstant.ONE_MINUTE_OF_SECOND),
   SKU_INFO2("sku_info2", "sku_info2_{0}", TimeConstant.FIVE_MINUTE_OF_SECOND, TimeConstant.ONE_MINUTE_OF_SECOND, TimeConstant.ONE_MINUTE_OF_SECOND),
   ;
+  CacheKey(String confKey, String keyExp, int expire) {
+    this(confKey, keyExp, expire, expire, 0);
+  }
   CacheKey(String confKey, String keyExp, int expire, int update) {
     this(confKey, keyExp, expire, update, 0);
   }
@@ -64,6 +67,7 @@ public enum CacheKey implements CacheConf {
     this.expire = expire;
     this.update = update;
     this.randomRange = randomRange;
+    this.init();
   }
   /**
    * 加载数据配置名称，也是动态配置中缓存开关
@@ -157,6 +161,42 @@ StickerVO stickerVO = itemCacheUtil.get(CacheKey.WARE_STICKER_BY_MARKER, Sticker
 ```java
 Integer category = 2;
 Integer val = cacheUtil.get(CacheKey.SEA_ITEM_CATEGORY, () -> category + 1, v -> v > 0, category);
+```
+
+#### 3.1.4 基于注解缓存
+* 方法介绍
+```java
+public @interface HcCache {
+  /**
+   * 缓存配置，对应 {@link cn.hc.tool.cache.bean.CacheConf#getConfKey()} 的值
+   */
+  String conf();
+  /**
+   * 缓存key参数，springEL表达式
+   */
+  String key() default "";
+}
+```
+* 使用示例1-不带参数
+```java
+@HcCache(conf = "test")
+public String test() {
+  return "ok";
+}
+```
+* 使用示例2-只有1个普通类型参数时，采用该参数作为key
+```java
+@HcCache(conf = "test2")
+public String test2(String name) {
+  return "ok" + name;
+}
+```
+* 使用示例3-基于springEL表达式，支持多个参数
+```java
+@HcCache(conf = "test2", key = "{#name + ':' + #age}")
+public String test3(String name, Integer age) {
+  return "ok" + name + age;
+}
 ```
 
 ### 3.2 批量缓存 基于List getFromList

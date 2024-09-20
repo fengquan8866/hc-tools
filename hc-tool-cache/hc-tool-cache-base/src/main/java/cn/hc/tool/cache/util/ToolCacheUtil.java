@@ -36,26 +36,6 @@ public class ToolCacheUtil {
     @Value("${hc.cache.timeout:2000}")
     private long timeout = 2000;
 
-    @Deprecated
-    public <V, T extends CacheConf> V get(T cacheConf, Callable<V> reloadTask, Function<T, String> keyFunc) {
-        return this.get(cacheConf, String.class, reloadTask, keyFunc);
-    }
-
-    @Deprecated
-    public <V, T extends CacheConf> V get(T cacheConf, Class<V> vClass, Callable<V> reloadTask, Function<T, String> keyFunc) {
-        return this.get(cacheConf, (Type) vClass, reloadTask, keyFunc);
-    }
-
-    @Deprecated
-    public <V, T extends CacheConf> V get(T cacheConf, Type vClass, Callable<V> reloadTask, Function<T, String> keyFunc) {
-        CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);
-        String key = cacheConf.getKeyExp();
-        if (keyFunc != null) {
-            key = keyFunc.apply(cacheConf);
-        }
-        return this.get(cacheDegrade, vClass, key, cacheConf, reloadTask, null);
-    }
-
     public String get(CacheConf cacheConf, Callable<String> reloadTask, Object... keyParams) {
         return this.get(cacheConf, String.class, reloadTask, keyParams);
     }
@@ -131,16 +111,6 @@ public class ToolCacheUtil {
         return null;
     }
 
-    @Deprecated
-    public <V, P> List<V> getFromList(CacheConf cacheConf, Class<V> vClass, Function<List<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, List<P> keyParams) {
-        return this.getFromList(cacheConf, (Type) vClass, reloadTask, keyFunc, keyParams);
-    }
-
-    @Deprecated
-    public <V, P> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, List<P> keyParams) {
-        return getFromList(cacheConf, vClass, reloadTask, keyFunc, null, keyParams);
-    }
-
     /**
      * 批量缓存
      *
@@ -153,7 +123,7 @@ public class ToolCacheUtil {
      * @return List结果集
      */
     public <K, V> List<V> getFromList(CacheConf cacheConf, Class<V> vClass, Function<List<K>, List<V>> reloadTask, List<K> keyParams) {
-        return this.getFromList(cacheConf, (Type) vClass, reloadTask, (k, v) -> new Object[]{k}, keyParams);
+        return this.getFromList(cacheConf, vClass, reloadTask, (k, v) -> new Object[]{k}, keyParams);
     }
 
     /**
@@ -172,24 +142,23 @@ public class ToolCacheUtil {
         return this.getFromList(cacheConf, (Type) vClass, reloadTask, keyFunc, keyParams);
     }
 
-    @Deprecated
-    public <V, P> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, Predicate<V> predicate, List<P> keyParams) {
-        return this.getFromList(cacheConf, vClass, reloadTask, (k, v) -> keyFunc.apply(v), predicate, keyParams);
+    public <K, V> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<K>, List<V>> reloadTask, List<K> keyParams) {
+        return getFromList(cacheConf, vClass, reloadTask, (k, v) -> new Object[]{k}, null, keyParams);
     }
 
-    public <V, P> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<P>, List<V>> reloadTask, BiFunction<P, V, Object[]> keyFunc, List<P> keyParams) {
+    public <K, V> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<K>, List<V>> reloadTask, BiFunction<K, V, Object[]> keyFunc, List<K> keyParams) {
         return getFromList(cacheConf, vClass, reloadTask, keyFunc, null, keyParams);
     }
 
-    public <V, P> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<P>, List<V>> reloadTask, BiFunction<P, V, Object[]> keyFunc, Predicate<V> predicate, List<P> keyParams) {
+    public <K, V> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<K>, List<V>> reloadTask, BiFunction<K, V, Object[]> keyFunc, Predicate<V> predicate, List<K> keyParams) {
         CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);
         if (cacheDegrade == CacheStrategyEnum.RELOAD_ONLY || cacheConf.getExpireSeconds() == 0) {
             return reloadTask.apply(keyParams);
         }
         List<V> res = new ArrayList<>(); // 结果集
-        List<P> ks = new ArrayList<>(); // 未缓存的数据
+        List<K> ks = new ArrayList<>(); // 未缓存的数据
 //        List<T> reloadList = new ArrayList<>(); // TODO 批量更新
-        for (final P k : keyParams) {
+        for (final K k : keyParams) {
             String key = cacheConf.getFullCacheKey(k);
             CacheData<V> cacheData = getCacheData(key, vClass);
             if (cacheData == null) {
@@ -198,7 +167,7 @@ public class ToolCacheUtil {
                 if (cacheDegrade != CacheStrategyEnum.CACHE_ONLY) {
 //                    reloadList.add(k);
                     try {
-                        List<P> reloadParam = newList(keyParams);
+                        List<K> reloadParam = newList(keyParams);
                         reloadParam.add(k);
                         updateCacheIfNeed(cacheData, key, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), () -> {
 //                            log.warn("刷新数据： {}", k);
@@ -228,13 +197,8 @@ public class ToolCacheUtil {
         return res;
     }
 
-    @Deprecated
-    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, Set<P> keyParams) {
-        return this.getListFromSet(cacheConf, (Type) vClass, reloadTask, keyFunc, keyParams);
-    }
-
     public <V, P> List<V> getListFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, List<V>> reloadTask, Set<P> keyParams) {
-        return this.getListFromSet(cacheConf, (Type) vClass, reloadTask, (k, v) -> new Object[]{k}, keyParams);
+        return this.getListFromSet(cacheConf, vClass, reloadTask, (k, v) -> new Object[]{k}, keyParams);
     }
 
     /**
@@ -252,38 +216,27 @@ public class ToolCacheUtil {
         return this.getListFromSet(cacheConf, (Type) vClass, reloadTask, keyFunc, keyParams);
     }
 
-    @Deprecated
-    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, Set<P> keyParams) {
+    public <K, V> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<K>, List<V>> reloadTask, Set<K> keyParams) {
+        return getListFromSet(cacheConf, vClass, reloadTask, (k, v) -> new Object[]{k}, null, keyParams);
+    }
+
+    public <K, V> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<K>, List<V>> reloadTask, BiFunction<K, V, Object[]> keyFunc, Set<K> keyParams) {
         return getListFromSet(cacheConf, vClass, reloadTask, keyFunc, null, keyParams);
     }
 
-    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, List<V>> reloadTask, BiFunction<P, V, Object[]> keyFunc, Set<P> keyParams) {
-        return getListFromSet(cacheConf, vClass, reloadTask, keyFunc, null, keyParams);
-    }
-
-    @Deprecated
-    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, Predicate<V> predicate, Set<P> keyParams) {
+    public <K, V> List<V> getListFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<K>, List<V>> reloadTask, BiFunction<K, V, Object[]> keyFunc, Predicate<V> predicate, Set<K> keyParams) {
         return this.getListFromSet(cacheConf, (Type) vClass, reloadTask, keyFunc, predicate, keyParams);
     }
 
-    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, List<V>> reloadTask, BiFunction<P, V, Object[]> keyFunc, Predicate<V> predicate, Set<P> keyParams) {
-        return this.getListFromSet(cacheConf, (Type) vClass, reloadTask, keyFunc, predicate, keyParams);
-    }
-
-    @Deprecated
-    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, List<V>> reloadTask, Function<V, Object[]> keyFunc, Predicate<V> predicate, Set<P> keyParams) {
-        return this.getListFromSet(cacheConf, vClass, reloadTask, (k, v) -> keyFunc.apply(v), predicate, keyParams);
-    }
-
-    public <V, P> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, List<V>> reloadTask, BiFunction<P, V, Object[]> keyFunc, Predicate<V> predicate, Set<P> keyParams) {
+    public <K, V> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<K>, List<V>> reloadTask, BiFunction<K, V, Object[]> keyFunc, Predicate<V> predicate, Set<K> keyParams) {
         CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);
         if (cacheDegrade == CacheStrategyEnum.RELOAD_ONLY || cacheConf.getExpireSeconds() == 0) {
             return reloadTask.apply(keyParams);
         }
         List<V> res = new ArrayList<>(); // 结果集
-        Set<P> ks = new LinkedHashSet<>(); // 未缓存的数据
+        Set<K> ks = new LinkedHashSet<>(); // 未缓存的数据
 //        List<T> reloadList = new ArrayList<>(); // TODO 批量更新
-        for (P k : keyParams) {
+        for (K k : keyParams) {
             String key = cacheConf.getFullCacheKey(k);
             CacheData<V> cacheData = getCacheData(key, vClass);
             if (cacheData == null) {
@@ -292,7 +245,7 @@ public class ToolCacheUtil {
                 if (cacheDegrade != CacheStrategyEnum.CACHE_ONLY) {
 //                    reloadList.add(k);
                     try {
-                        Set<P> reloadParam = newSet(keyParams);
+                        Set<K> reloadParam = newSet(keyParams);
                         reloadParam.add(k);
                         updateCacheIfNeed(cacheData, key, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), () -> {
                             List<V> resList = reloadTask.apply(reloadParam);
@@ -313,7 +266,7 @@ public class ToolCacheUtil {
             List<V> loadList = reloadTask.apply(ks);
             res.addAll(loadList);
             int i = 0;
-            for (P p : ks) {
+            for (K p : ks) {
                 V e = loadList.get(i++);
                 String key = cacheConf.getFullCacheKey(keyFunc.apply(p, e));
                 saveCache(e, key, cacheConf.getExpireSeconds(), predicate);
@@ -363,7 +316,7 @@ public class ToolCacheUtil {
      * @param <K>          map的key类型
      * @return Map<K, V>
      */
-    public <V, P, K> Map<K, V> getMapFromList(CacheConf cacheConf, Type vClass, Function<List<P>, Map<K, V>> reloadTask,
+    public <K, V, P> Map<K, V> getMapFromList(CacheConf cacheConf, Type vClass, Function<List<P>, Map<K, V>> reloadTask,
                                               BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
                                               List<P> keyParams) {
         return getMapFromList(cacheConf, vClass, reloadTask, mapKeyFunc, cacheKeyFunc, null, keyParams);
@@ -384,13 +337,13 @@ public class ToolCacheUtil {
      * @param <K>          map的key类型
      * @return Map<K, V>
      */
-    public <V, P, K> Map<K, V> getMapFromList(CacheConf cacheConf, Class<V> vClass, Function<List<P>, Map<K, V>> reloadTask,
+    public <K, V, P> Map<K, V> getMapFromList(CacheConf cacheConf, Class<V> vClass, Function<List<P>, Map<K, V>> reloadTask,
                                               BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
                                               Predicate<V> predicate, List<P> keyParams) {
         return this.getMapFromList(cacheConf, (Type) vClass, reloadTask, mapKeyFunc, cacheKeyFunc, predicate, keyParams);
     }
 
-    public <V, P, K> Map<K, V> getMapFromList(CacheConf cacheConf, Type vClass, Function<List<P>, Map<K, V>> reloadTask,
+    public <K, V, P> Map<K, V> getMapFromList(CacheConf cacheConf, Type vClass, Function<List<P>, Map<K, V>> reloadTask,
                                               BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
                                               Predicate<V> predicate, List<P> keyParams) {
         CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);
@@ -441,12 +394,12 @@ public class ToolCacheUtil {
     /**
      * 批量缓存
      *
-     * @param cacheConf    缓存key枚举
-     * @param vClass       返回类型
-     * @param reloadTask   缓存未命中加装数据的任务
-     * @param keyParams    生成完整缓存key需要的参数
-     * @param <V>          返回结果数据类型
-     * @param <K>          map的key类型
+     * @param cacheConf  缓存key枚举
+     * @param vClass     返回类型
+     * @param reloadTask 缓存未命中加装数据的任务
+     * @param keyParams  生成完整缓存key需要的参数
+     * @param <V>        返回结果数据类型
+     * @param <K>        map的key类型
      * @return Map<K, V>
      */
     public <K, V> Map<K, V> getMapFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<K>, Map<K, V>> reloadTask,
@@ -454,7 +407,7 @@ public class ToolCacheUtil {
         return this.getMapFromSet(cacheConf, (Type) vClass, reloadTask, keyParams);
     }
 
-    public <V, P, K> Map<K, V> getMapFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, Map<K, V>> reloadTask,
+    public <K, V, P> Map<K, V> getMapFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, Map<K, V>> reloadTask,
                                              BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
                                              Set<P> keyParams) {
         return this.getMapFromSet(cacheConf, (Type) vClass, reloadTask, mapKeyFunc, cacheKeyFunc, keyParams);
@@ -465,13 +418,13 @@ public class ToolCacheUtil {
         return getMapFromSet(cacheConf, vClass, reloadTask, (k, v) -> k, (k, v) -> new Object[]{k}, null, keyParams);
     }
 
-    public <V, P, K> Map<K, V> getMapFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, Map<K, V>> reloadTask,
+    public <K, V, P> Map<K, V> getMapFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, Map<K, V>> reloadTask,
                                              BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
                                              Set<P> keyParams) {
         return getMapFromSet(cacheConf, vClass, reloadTask, mapKeyFunc, cacheKeyFunc, null, keyParams);
     }
 
-    public <V, P, K> Map<K, V> getMapFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, Map<K, V>> reloadTask,
+    public <K, V, P> Map<K, V> getMapFromSet(CacheConf cacheConf, Class<V> vClass, Function<Set<P>, Map<K, V>> reloadTask,
                                              BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
                                              Predicate<V> predicate, Set<P> keyParams) {
         return this.getMapFromSet(cacheConf, (Type) vClass, reloadTask, mapKeyFunc, cacheKeyFunc, predicate, keyParams);
@@ -492,7 +445,7 @@ public class ToolCacheUtil {
      * @param <K>          map的key类型
      * @return Map<K, V>
      */
-    public <V, P, K> Map<K, V> getMapFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, Map<K, V>> reloadTask,
+    public <K, V, P> Map<K, V> getMapFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, Map<K, V>> reloadTask,
                                              BiFunction<P, V, K> mapKeyFunc, BiFunction<K, V, Object[]> cacheKeyFunc,
                                              Predicate<V> predicate, Set<P> keyParams) {
         CacheStrategyEnum cacheDegrade = getDegradeSwitch(cacheConf);

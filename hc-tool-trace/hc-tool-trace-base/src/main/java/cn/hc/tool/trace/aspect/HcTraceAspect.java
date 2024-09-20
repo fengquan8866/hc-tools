@@ -51,7 +51,7 @@ public class HcTraceAspect {
                 }
                 MDC.put(HcTraceConst.TRACE_ID, traceId);
             }
-            //运行目标方法
+            // 运行目标方法
             return jp.proceed();
         } finally {
             // 当前生成的，就当前删除

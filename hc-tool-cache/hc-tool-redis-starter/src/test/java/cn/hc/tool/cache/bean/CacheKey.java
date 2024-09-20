@@ -2,12 +2,14 @@ package cn.hc.tool.cache.bean;
 
 import cn.hc.tool.cache.constant.Times;
 import lombok.Getter;
+import lombok.ToString;
 
 /**
  * @author huangchao E-mail:fengquan8866@163.com
  * @version 创建时间：2024/9/16 18:29
  */
 @Getter
+@ToString
 public enum CacheKey implements CacheConf {
     SKU_INFO("sku_info", "sku_info_{0}", Times.FIVE_MINUTE, Times.MINUTE),
     SKU_INFO2("sku_info2", "sku_info2_{0}", Times.FIVE_MINUTE, Times.MINUTE, Times.MINUTE),
@@ -27,6 +29,7 @@ public enum CacheKey implements CacheConf {
         this.expire = expire;
         this.update = update;
         this.randomRange = randomRange;
+        this.init();
     }
 
     /**

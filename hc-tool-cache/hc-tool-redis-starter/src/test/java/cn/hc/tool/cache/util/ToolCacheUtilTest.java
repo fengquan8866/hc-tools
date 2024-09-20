@@ -1,6 +1,8 @@
 package cn.hc.tool.cache.util;
 
+import cn.hc.tool.cache.bean.CacheConf;
 import cn.hc.tool.cache.bean.CacheKey;
+import com.hc.json.adapter.Json;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Sets;
 import org.junit.Test;
@@ -26,6 +28,12 @@ public class ToolCacheUtilTest {
 
     @Autowired
     private ToolCacheUtil cacheUtil;
+
+    @Test
+    public void confMap() {
+        log.info("--{}", CacheKey.SKU_INFO.getConfKey());
+        log.info("2---{}", CacheConf.confMap);
+    }
 
     /**
      * 测试范围：1-5

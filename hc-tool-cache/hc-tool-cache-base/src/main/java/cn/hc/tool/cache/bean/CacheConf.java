@@ -2,13 +2,12 @@ package cn.hc.tool.cache.bean;
 
 import cn.hc.tool.common.util.NumberUtil;
 import cn.hc.tool.config.util.ConfigUtil;
+import com.hc.json.adapter.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 缓存接口类
@@ -19,6 +18,8 @@ import java.util.Set;
  */
 public interface CacheConf {
     Logger log = LoggerFactory.getLogger(CacheConf.class);
+
+    Map<String, CacheConf> confMap = new HashMap<>();
 
     /**
      * 加载数据配置名称，也是动态配置中缓存开关
@@ -45,6 +46,15 @@ public interface CacheConf {
      * 随机时间范围，随机时间范围大于0，则每次获取缓存key时，随机增加0-randomRange秒
      */
     int getRandomRange();
+
+    /**
+     * 初始化
+     */
+    default void init() {
+        log.info("init k:{}, {}", getConfKey(), this);
+        confMap.put(getConfKey(), this);
+        log.info("confMap: {}", confMap);
+    }
 
     /**
      * 生成缓存key
