@@ -1,5 +1,6 @@
 package cn.hc.tool.trace.util;
 
+import cn.hc.tool.common.util.NumberUtil;
 import cn.hc.tool.common.util.SilentUtil;
 import cn.hc.tool.common.util.StringUtil;
 import cn.hc.tool.trace.common.HcTraceConst;
@@ -64,6 +65,25 @@ public class TraceFactory {
         } finally {
             clearTraceId(initTraceKeys);
         }
+    }
+
+    /**
+     * 设置traceId
+     */
+    public static void setTraceId(String traceId) {
+        MDC.put(HcTraceConst.TRACE_ID, traceId);
+    }
+
+    /**
+     * 递增traceId尾部数字，如果traceId尾部数字为空，则不处理
+     * 示例：入参 traceId = aaaaaa-1，则返回aaaaaa-2
+     */
+    public static String incrIfExistPart(String traceId) {
+        int idx = traceId.lastIndexOf('-');
+        if (idx >= traceId.length() - 1) return traceId;
+        String part = traceId.substring(idx + 1);
+        if (!NumberUtil.isNum(part)) return traceId;
+        return traceId.substring(0, idx + 1) + (NumberUtil.toInt(part) + 1);
     }
 
     /**
@@ -150,7 +170,8 @@ public class TraceFactory {
      * 生成链路id
      */
     public static String createTraceId() {
-        return UUID.randomUUID().toString();
+        String uuid = UUID.randomUUID().toString();
+        return uuid.replace("-", "");
     }
 
     /**
@@ -171,6 +192,13 @@ public class TraceFactory {
      */
     public static void appendTrace(final Runnable func, final Object... traceVal) {
         appendTraceId(func, HcTraceConst.TRACE_ID, traceVal);
+    }
+
+    /**
+     * 清空traceId
+     */
+    public static void clearTraceId() {
+        MDC.remove(HcTraceConst.TRACE_ID);
     }
 
     /**

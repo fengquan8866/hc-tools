@@ -15,7 +15,7 @@
 ```xml
 <dependency>
   <groupId>cn.hc</groupId>
-  <artifactId>hc-redis-spring-boot-starter</artifactId>
+  <artifactId>hc-tool-redis-starter</artifactId>
   <version>1.0-SNAPSHOT</version>
 </dependency>
 ```
@@ -298,9 +298,25 @@ Map<String, Image> imgMultipleMap = idCacheUtil.getMapFromSet(CacheKey.PRODUCT_I
 ```
 
 
-## 四、功能-锁工具
+## 四、功能-锁工具 ToolLockUtil
 
-### 4.1 锁失败指定异常
+### 4.1 分布式锁
+> 锁失败抛出默认异常 ToolCacheException
+
+* 方法介绍
+```java
+/**
+ * {@link #execute(CacheConf, Callable, Callable, Object...)}
+ */
+public <T> T execute(CacheConf cacheConf, Callable<T> callback, Object... keyParams);
+```
+* 使用示例
+```java
+Long val = toolLockUtil.execute(CacheKey.LOCK_INIT_BIZ_ORG, () -> bizOrgService.initBizOrg(req),
+                req.getAccountId());
+```
+
+### 4.2 分布式锁 锁失败自定义异常
 * 方法介绍
 ```java
 /**
@@ -319,25 +335,6 @@ public <T, E extends Exception> T execute(CacheConf cacheConf, Callable<T> callb
 ```java
 Long val = lockUtil.execute(CacheKey.LOCK_INIT_BIZ_ORG, () -> bizOrgService.initBizOrg(req),
                 () -> new BizException(AuthErrorEnums.ERROR_INIT_BIZ_ORG_CONCURRENCY),
-                req.getAccountId());
-```
-
-### 4.2 锁失败抛出默认异常 ToolCacheException
-* 方法介绍
-```java
-/**
- * 分布式锁执行方法,释放锁
- *
- * @param cacheInterface 缓存配置
- * @param callback       方法体
- * @param <T>            泛型
- * @return 方法体执行结果
- */
-public <T, E extends Exception> T execute(CacheConf cacheInterface, Func<T> callback, Object... keyParams);
-```
-* 使用示例
-```java
-Long val = toolLockUtil.execute(CacheKey.LOCK_INIT_BIZ_ORG, () -> bizOrgService.initBizOrg(req),
                 req.getAccountId());
 ```
 

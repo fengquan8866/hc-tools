@@ -44,4 +44,30 @@ public class NumberUtilTest {
         String e = "";
         log.info("toInteger(Long)={}", NumberUtil.toInteger(e, -1));
     }
+
+    @Test
+    public void isNum() {
+        int count = 100 * 10000;
+        long l1 = System.currentTimeMillis();
+        for (int i = 0; i < count; i++) {
+            isNum4Iter(i + "");
+        }
+        long l2 = System.currentTimeMillis();
+        for (int i = 0; i < count; i++) {
+            isNum4Match(i + "");
+        }
+        long l3 = System.currentTimeMillis();
+        log.info("l2-l1={}, l3-l2={}", l2 - l1, l3 - l2);
+    }
+
+    private boolean isNum4Iter(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) < '0' || s.charAt(i) > '9') return false;
+        }
+        return true;
+    }
+
+    private boolean isNum4Match(String s) {
+        return s.matches("^[0-9]*$");
+    }
 }

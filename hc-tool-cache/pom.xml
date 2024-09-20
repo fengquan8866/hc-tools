@@ -12,7 +12,7 @@
     <name>hc-tool-cache</name>
     <modules>
         <module>hc-tool-cache-base</module>
-        <module>hc-redis-spring-boot-starter</module>
+        <module>hc-tool-redis-starter</module>
     </modules>
 
     <properties>

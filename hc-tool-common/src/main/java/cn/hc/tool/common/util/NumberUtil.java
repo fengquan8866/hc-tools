@@ -258,4 +258,17 @@ public class NumberUtil {
     public static <T extends Number> T defaultIfNull(T num, T defaultNum) {
         return num == null ? defaultNum : num;
     }
+
+    /**
+     * 判断是否为数字
+     *
+     * @param str 字符串
+     */
+    public static boolean isNum(String str) {
+        if (str == null) return false;
+        for (int i = 0; i < str.length(); i++) {
+            if (str.charAt(i) < '0' || str.charAt(i) > '9') return false;
+        }
+        return true;
+    }
 }

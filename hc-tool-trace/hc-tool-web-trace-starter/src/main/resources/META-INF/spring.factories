@@ -1,0 +1,1 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=cn.hc.tool.trace.conf.HcTraceComponentScanner
