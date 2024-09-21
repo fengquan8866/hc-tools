@@ -3,69 +3,78 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.17</version>
+        <groupId>cn.hc</groupId>
+        <artifactId>hc-tools</artifactId>
+        <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>cn.hc</groupId>
-    <artifactId>hc-tools</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <artifactId>hc-tool-dependencies</artifactId>
     <packaging>pom</packaging>
-    <modules>
-        <module>hc-tool-config</module>
-        <module>hc-tool-common</module>
-        <module>hc-tool-cache</module>
-        <module>hc-tool-trace</module>
-        <module>hc-tool-dependencies</module>
-    </modules>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-cloud.version>2021.0.9</spring-cloud.version>
         <hc.tools.version>1.0-SNAPSHOT</hc.tools.version>
         <hc.tool.json.version>1.0-SNAPSHOT</hc.tool.json.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>cn.hc</groupId>
-                <artifactId>hc-tool-common</artifactId>
-                <version>${hc.tools.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>cn.hc</groupId>
-                <artifactId>hc-tool-config-base</artifactId>
-                <version>${hc.tools.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>cn.hc</groupId>
-                <artifactId>hc-tool-trace-base</artifactId>
-                <version>${hc.tools.version}</version>
-            </dependency>
-
+            <!-- json适配 -->
             <dependency>
                 <groupId>cn.hc</groupId>
                 <artifactId>json-adapter</artifactId>
                 <version>${hc.tool.json.version}</version>
             </dependency>
 
+            <!-- cache -->
             <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
+                <groupId>cn.hc</groupId>
+                <artifactId>hc-tool-cache-base</artifactId>
+                <version>${hc.tools.version}</version>
             </dependency>
+            <dependency>
+                <groupId>cn.hc</groupId>
+                <artifactId>hc-tool-redis-starter</artifactId>
+                <version>${hc.tools.version}</version>
+            </dependency>
+
+            <!-- 公共工具包 -->
+            <dependency>
+                <groupId>cn.hc</groupId>
+                <artifactId>hc-tool-common</artifactId>
+                <version>${hc.tools.version}</version>
+            </dependency>
+
+            <!-- 配置中心 -->
+            <dependency>
+                <groupId>cn.hc</groupId>
+                <artifactId>hc-tool-config-base</artifactId>
+                <version>${hc.tools.version}</version>
+            </dependency>
+
+            <!-- 链路跟踪 -->
+            <dependency>
+                <groupId>cn.hc</groupId>
+                <artifactId>hc-tool-trace-base</artifactId>
+                <version>${hc.tools.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hc</groupId>
+                <artifactId>hc-tool-web-trace-starter</artifactId>
+                <version>${hc.tools.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hc</groupId>
+                <artifactId>hc-tool-feign-trace-starter</artifactId>
+                <version>${hc.tools.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
+
     <build>
         <plugins>
             <plugin>
@@ -76,21 +85,6 @@
                     <skip>true</skip>
                 </configuration>
             </plugin>
-            <plugin>
-                <artifactId>maven-source-plugin</artifactId>
-                <configuration>
-                    <attach>true</attach>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
-
 </project>

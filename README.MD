@@ -1,5 +1,22 @@
 # hc-tools工具包
 
+## pom依赖
+
+* xml
+
+```xml
+<!-- hc tool -->
+<dependency>
+    <groupId>cn.hc</groupId>
+    <artifactId>hc-tool-dependencies</artifactId>
+    <version>${hc.tools.version}</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+```
+
+* 版本号：`1.0-SNAPSHOT`
+
 ## 子模块介绍
 
 1. [common组件README](./hc-tool-common/README.MD)： basic工具包
