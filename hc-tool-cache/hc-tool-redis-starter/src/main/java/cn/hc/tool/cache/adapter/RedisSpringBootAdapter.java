@@ -175,16 +175,12 @@ public class RedisSpringBootAdapter implements CacheAdapter {
     @Override
     public boolean del(String key) {
         String fullKey = buildKey(key);
-        return redisTemplate.opsForValue().getAndDelete(fullKey) != null;
+        return redisTemplate.opsForValue().getOperations().delete(fullKey);
     }
 
     @Override
     public boolean del(String... keys) {
-        for (String key : keys) {
-            String fullKey = buildKey(key);
-            redisTemplate.opsForValue().getAndDelete(fullKey);
-        }
-        return true;
+        return redisTemplate.opsForValue().getOperations().delete(Arrays.asList(keys)) > 0;
     }
 
     @Override

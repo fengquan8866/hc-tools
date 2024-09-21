@@ -112,6 +112,32 @@ public class ToolCacheUtil {
     }
 
     /**
+     * 删除缓存
+     *
+     * @param cacheConf 缓存key枚举
+     * @param keyParams 生成完整缓存key需要的参数
+     * @return 结果
+     */
+    public boolean remove(CacheConf cacheConf, Object... keyParams) {
+        String fullCacheKey = cacheConf.getFullCacheKey(keyParams);
+        return cacheAdapter.del(fullCacheKey);
+    }
+
+    /**
+     * 更新缓存
+     *
+     * @param cacheConf 缓存key枚举
+     * @param data      数据
+     * @param keyParams 生成完整缓存key需要的参数
+     * @return 结果
+     */
+    public boolean update(CacheConf cacheConf, Object data, Object... keyParams) {
+        String key = cacheConf.getFullCacheKey(keyParams);
+        this.saveCache(data, key, cacheConf.getExpireSeconds(), null);
+        return true;
+    }
+
+    /**
      * 批量缓存
      *
      * @param cacheConf  缓存key枚举

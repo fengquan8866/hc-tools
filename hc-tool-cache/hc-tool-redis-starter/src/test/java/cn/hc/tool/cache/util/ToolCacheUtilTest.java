@@ -146,4 +146,30 @@ public class ToolCacheUtilTest {
         log.info("val:{}", val);
     }
 
+    /**
+     * 测试范围：26-30
+     */
+    @Test
+    public void remove() {
+        Integer sku = 26;
+        Integer val = cacheUtil.get(CacheKey.SKU_INFO, Integer.class, () -> sku + 1, sku);
+        log.info("val:{}", val);
+        cacheUtil.remove(CacheKey.SKU_INFO, sku);
+        log.info("----------------------------------------------");
+        val = cacheUtil.get(CacheKey.SKU_INFO, Integer.class, () -> sku + 1, sku);
+        log.info("val:{}", val);
+    }
+    /**
+     * 测试范围：31-35
+     */
+    @Test
+    public void update() {
+        Integer sku = 31;
+        Integer val = cacheUtil.get(CacheKey.SKU_INFO, Integer.class, () -> sku + 1, sku);
+        log.info("val:{}", val);
+        cacheUtil.update(CacheKey.SKU_INFO, sku + 2, sku);
+        log.info("----------------------------------------------");
+        val = cacheUtil.get(CacheKey.SKU_INFO, Integer.class, () -> sku + 1, sku);
+        log.info("val:{}", val);
+    }
 }

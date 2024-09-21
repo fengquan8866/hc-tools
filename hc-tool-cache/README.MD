@@ -199,6 +199,41 @@ public String test3(String name, Integer age) {
 }
 ```
 
+#### 3.1.5 删除缓存
+* 方法介绍
+```java
+/**
+ * 删除缓存
+ *
+ * @param cacheConf 缓存key枚举
+ * @param keyParams 生成完整缓存key需要的参数
+ * @return 结果
+ */
+public boolean remove(CacheConf cacheConf, Object... keyParams);
+```
+* 使用示例1
+```java
+cacheUtil.remove(CacheKey.SEA_ITEM_CATEGORY, category);
+```
+
+#### 3.1.6 更新缓存
+* 方法介绍
+```java
+/**
+ * 更新缓存
+ *
+ * @param cacheConf 缓存key枚举
+ * @param data      数据
+ * @param keyParams 生成完整缓存key需要的参数
+ * @return 结果
+ */
+public boolean update(CacheConf cacheConf, Object data, Object... keyParams);
+```
+* 使用示例1
+```java
+cacheUtil.update(CacheKey.SEA_ITEM_CATEGORY, category + 1, category);
+```
+
 ### 3.2 批量缓存 基于List getFromList
 #### 3.2.1 批量缓存
 * 方法介绍
