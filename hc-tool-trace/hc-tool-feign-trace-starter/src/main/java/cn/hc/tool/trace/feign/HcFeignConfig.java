@@ -5,7 +5,6 @@ import cn.hc.tool.trace.util.TraceFactory;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
  * @version 创建时间：2024/9/20 22:13
  */
 @Configuration
-@EnableFeignClients(basePackages = {""})
 @Slf4j
 public class HcFeignConfig {
     @Bean

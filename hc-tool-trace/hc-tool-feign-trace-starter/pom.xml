@@ -23,10 +23,10 @@
             <artifactId>hc-tool-web-trace-starter</artifactId>
         </dependency>
 
-        <!-- Spring Cloud的Feign依赖 -->
+        <!-- Feign依赖 -->
         <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-core</artifactId>
         </dependency>
     </dependencies>
 

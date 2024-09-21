@@ -2,7 +2,6 @@ package cn.hc.tool.cache.bean;
 
 import cn.hc.tool.common.util.NumberUtil;
 import cn.hc.tool.config.util.ConfigUtil;
-import com.hc.json.adapter.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +52,6 @@ public interface CacheConf {
     default void init() {
         log.info("init k:{}, {}", getConfKey(), this);
         confMap.put(getConfKey(), this);
-        log.info("confMap: {}", confMap);
     }
 
     /**
