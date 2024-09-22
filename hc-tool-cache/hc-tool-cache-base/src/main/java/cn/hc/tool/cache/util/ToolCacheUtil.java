@@ -75,6 +75,33 @@ public class ToolCacheUtil {
         return this.get(cacheDegrade, vClass, cacheConf.getFullCacheKey(keyParams), cacheConf, reloadTask, predicate);
     }
 
+    /**
+     * 获取缓存数据
+     *
+     * @param cacheConf 缓存key枚举
+     * @param keyParams 生成完整缓存key需要的参数
+     * @return 结果
+     */
+    public String get(CacheConf cacheConf, Object... keyParams) {
+        String key = cacheConf.getFullCacheKey(keyParams);
+        CacheData<String> cacheData = this.getCacheData(key, String.class);
+        return cacheData == null ? null : cacheData.getData();
+    }
+
+    /**
+     * 获取缓存数据
+     *
+     * @param cacheConf 缓存key枚举
+     * @param vClass     返回类型
+     * @param keyParams 生成完整缓存key需要的参数
+     * @return 结果
+     */
+    public <V> V get(CacheConf cacheConf, Type vClass, Object... keyParams) {
+        String key = cacheConf.getFullCacheKey(keyParams);
+        CacheData<V> cacheData = this.getCacheData(key, vClass);
+        return cacheData == null ? null : cacheData.getData();
+    }
+
     public <V, T extends CacheConf> V get(CacheStrategyEnum cacheDegrade, Type type, String key,
                                           T cacheConf, Callable<V> reloadTask, Predicate<V> predicate) {
         // 1、拒绝策略

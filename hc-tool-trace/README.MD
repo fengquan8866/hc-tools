@@ -7,9 +7,10 @@
 ## 一、步骤
 ### 1.1 引入依赖
 ```xml
+<!-- feign应用 -->
 <dependency>
   <groupId>cn.hc</groupId>
-  <artifactId>hc-tool-trace-base</artifactId>
+  <artifactId>hc-tool-feign-trace-base</artifactId>
   <version>1.0-SNAPSHOT</version>
 </dependency>
 ```

@@ -163,40 +163,22 @@ Integer category = 2;
 Integer val = cacheUtil.get(CacheKey.SEA_ITEM_CATEGORY, () -> category + 1, v -> v > 0, category);
 ```
 
-#### 3.1.4 基于注解缓存
+#### 3.1.4 更新缓存
 * 方法介绍
 ```java
-public @interface HcCache {
-  /**
-   * 缓存配置，对应 {@link cn.hc.tool.cache.bean.CacheConf#getConfKey()} 的值
-   */
-  String conf();
-  /**
-   * 缓存key参数，springEL表达式
-   */
-  String key() default "";
-}
+/**
+ * 更新缓存
+ *
+ * @param cacheConf 缓存key枚举
+ * @param data      数据
+ * @param keyParams 生成完整缓存key需要的参数
+ * @return 结果
+ */
+public boolean update(CacheConf cacheConf, Object data, Object... keyParams);
 ```
-* 使用示例1-不带参数
+* 使用示例1
 ```java
-@HcCache(conf = "test")
-public String test() {
-  return "ok";
-}
-```
-* 使用示例2-只有1个普通类型参数时，采用该参数作为key
-```java
-@HcCache(conf = "test2")
-public String test2(String name) {
-  return "ok" + name;
-}
-```
-* 使用示例3-基于springEL表达式，支持多个参数
-```java
-@HcCache(conf = "test2", key = "{#name + ':' + #age}")
-public String test3(String name, Integer age) {
-  return "ok" + name + age;
-}
+cacheUtil.update(CacheKey.SEA_ITEM_CATEGORY, category + 1, category);
 ```
 
 #### 3.1.5 删除缓存
@@ -214,24 +196,6 @@ public boolean remove(CacheConf cacheConf, Object... keyParams);
 * 使用示例1
 ```java
 cacheUtil.remove(CacheKey.SEA_ITEM_CATEGORY, category);
-```
-
-#### 3.1.6 更新缓存
-* 方法介绍
-```java
-/**
- * 更新缓存
- *
- * @param cacheConf 缓存key枚举
- * @param data      数据
- * @param keyParams 生成完整缓存key需要的参数
- * @return 结果
- */
-public boolean update(CacheConf cacheConf, Object data, Object... keyParams);
-```
-* 使用示例1
-```java
-cacheUtil.update(CacheKey.SEA_ITEM_CATEGORY, category + 1, category);
 ```
 
 ### 3.2 批量缓存 基于List getFromList
@@ -373,9 +337,47 @@ Map<String, Image> imgMultipleMap = idCacheUtil.getMapFromSet(CacheKey.PRODUCT_I
 ```
 
 
-## 四、功能-锁工具 ToolLockUtil
+## 四、缓存注解-spring cache
+>> 基于spring cache注解： @Cacheable、@CachePut 、@CacheEvict
 
-### 4.1 分布式锁
+### 4.1 @Cacheable 读+缓存
+* 示例
+```java
+@Cacheable(value = "test2", key = "{#id + ':' + #status}")
+public BusinessLicenseDTO query(Long id, Integer status) {
+    BusinessLicenseDTO vo = new BusinessLicenseDTO();
+    vo.setCreditCode(String.valueOf(id));
+    vo.setCompanyType(String.valueOf(status));
+    return vo;
+}
+```
+
+### 4.2 @CachePut 更新
+* 示例
+```java
+@CachePut(value = "test2", key = "{#id + ':' + #status}")
+public BusinessLicenseDTO update(Long id, Integer status) {
+  BusinessLicenseDTO vo = new BusinessLicenseDTO();
+  vo.setCreditCode(String.valueOf(id + 1));
+  vo.setCompanyType(String.valueOf(status + 1));
+  return vo;
+}
+```
+
+### 4.3 @CacheEvict 清理缓存
+* 示例
+```java
+@CacheEvict(value = "test2", key = "{#id + ':' + #status}")
+public String delete(Long id, Integer status) {
+  return "ok";
+}
+```
+
+
+
+## 五、功能-锁工具 ToolLockUtil
+
+### 5.1 分布式锁
 > 锁失败抛出默认异常 ToolCacheException
 
 * 方法介绍
@@ -391,7 +393,7 @@ Long val = toolLockUtil.execute(CacheKey.LOCK_INIT_BIZ_ORG, () -> bizOrgService.
                 req.getAccountId());
 ```
 
-### 4.2 分布式锁 锁失败自定义异常
+### 5.2 分布式锁 锁失败自定义异常
 * 方法介绍
 ```java
 /**
@@ -414,15 +416,15 @@ Long val = lockUtil.execute(CacheKey.LOCK_INIT_BIZ_ORG, () -> bizOrgService.init
 ```
 
 
-## 五、高级配置
+## 六、高级配置
 
-### 5.1 接配置中心 动态配置缓存过期时间 `${cacheConf}-expire`
+### 6.1 接配置中心 动态配置缓存过期时间 `${cacheConf}-expire`
 ```text
 // ducc配置 缓存过期时间1天（精确到秒）
 sea_item_category-expire=86400
 ```
 
-### 5.2 接配置中心 动态配置缓存更新时间 `${cacheConf}-update`
+### 6.2 接配置中心 动态配置缓存更新时间 `${cacheConf}-update`
 ```text
 // ducc配置 缓存过期时间5分钟（精确到秒）
 sea_item_category-update=300
