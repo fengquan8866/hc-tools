@@ -27,7 +27,7 @@ import java.util.*;
 @Aspect
 @Component
 @Slf4j
-public class HcCacheAspect2 implements Ordered {
+public class HcCacheAspect implements Ordered {
     @Autowired
     private CacheManager cacheManager;
     @Autowired

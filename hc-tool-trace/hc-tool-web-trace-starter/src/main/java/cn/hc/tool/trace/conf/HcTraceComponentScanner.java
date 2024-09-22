@@ -15,7 +15,7 @@ public class HcTraceComponentScanner implements ImportBeanDefinitionRegistrar {
 
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-        log.info("scan HcTraceComponentScanner-----------------");
+        log.debug("scan HcTraceComponentScanner-----------------");
         ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(registry);
         String[] packages = new String[]{"cn.hc.tool.trace"};
         scanner.scan(packages);

@@ -27,7 +27,7 @@ public class HcTraceAspect {
      *
      * @param jp 切点
      */
-    @Around("@within(cn.hc.tool.trace.aspect.HcTrace)")
+    @Around("@within(cn.hc.tool.trace.aspect.HcTrace) || @within(org.apache.rocketmq.spring.annotation.RocketMQMessageListener)")
     public Object traceWithinPoint(ProceedingJoinPoint jp) throws Throwable {
         return exec(jp);
     }
@@ -35,29 +35,26 @@ public class HcTraceAspect {
     /**
      * 注解监控拦截处理方法
      */
-    @Around("@annotation(cn.hc.tool.trace.aspect.HcTrace)")
+    @Around("@annotation(cn.hc.tool.trace.aspect.HcTrace) || @annotation(org.springframework.scheduling.annotation.Scheduled)")
     public Object traceAnnoPoint(ProceedingJoinPoint jp) throws Throwable {
         return exec(jp);
     }
 
     private Object exec(ProceedingJoinPoint jp) throws Throwable {
         String traceId = MDC.get(HcTraceConst.TRACE_ID);
-        boolean noTrace = traceId == null;
+        // 有traceId，直接执行
+        if (traceId != null) return jp.proceed();
         try {
-            if (traceId == null) {
-                traceId = TraceFactory.createTraceId();
-                if (log.isDebugEnabled()) {
-                    log.debug("HcTraceAspect生成traceId：{}", traceId);
-                }
-                MDC.put(HcTraceConst.TRACE_ID, traceId);
+            traceId = TraceFactory.createTraceId();
+            if (log.isDebugEnabled()) {
+                log.debug("HcTraceAspect生成traceId：{}", traceId);
             }
+            MDC.put(HcTraceConst.TRACE_ID, traceId);
             // 运行目标方法
             return jp.proceed();
         } finally {
             // 当前生成的，就当前删除
-            if (noTrace) {
-                MDC.remove(HcTraceConst.TRACE_ID);
-            }
+            MDC.remove(HcTraceConst.TRACE_ID);
         }
     }
 
