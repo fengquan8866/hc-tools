@@ -27,14 +27,19 @@
 <pattern>${logPatternLayout}</pattern>
 ```
 
-### 1.5 切面链路跟踪（针对`定时任务`等非`HTTP`入口）
+### 1.3 已默认支持
+1. http请求
+2. 定时任务注解 @Scheduled
+3. Rocketmq Listener @RocketMQMessageListener
+
+### 1.4 自定义切面链路跟踪（针对`定时任务`等非`HTTP`入口）
 >> 如果有重复配置，最上层配置生效
 * 注解方式
-
 ```java
 // 支持 类、方法 维度
 @cn.hc.tool.trace.aspect.HcTrace
 ```
+
 * xml方式
 ```xml
 <aop:config>
@@ -46,6 +51,14 @@
 </aop:config>
 ```
 
+* 自定义切面表达式
+```yaml
+hc:
+  trace:
+    # 按需添加：自定义切面表达式
+    pointcut: "@within(org.apache.rocketmq.spring.annotation.RocketMQMessageListener) || @annotation(org.springframework.scheduling.annotation.Scheduled)"
+```
+
 ## 二、功能
 
 注：可提需求、可提需求、可提需求
@@ -53,5 +66,5 @@
 ### 1、获取traceId
 >> `httpClient` 等请求，需自行在`header`中添加`traceId`，获取`traceId`方式如下：
 ```java
-org.slf4j.MDC.get(HcTraceConst.TRACE_ID)
+org.slf4j.MDC.get(HcTraceConst.TRACE_ID);
 ```

@@ -56,11 +56,6 @@ public interface CacheConf {
         return 0;
     }
 
-    @Deprecated
-    default int getRandomRange() {
-        return this.getRandom();
-    }
-
     /**
      * 初始化
      */

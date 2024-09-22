@@ -23,24 +23,16 @@ public class HcTraceAspect {
     }
 
     /**
-     * 类注解切面
+     * 注解切面
      *
      * @param jp 切点
      */
-    @Around("@within(cn.hc.tool.trace.aspect.HcTrace) || @within(org.apache.rocketmq.spring.annotation.RocketMQMessageListener)")
+    @Around("@within(cn.hc.tool.trace.aspect.HcTrace) || @annotation(cn.hc.tool.trace.aspect.HcTrace)")
     public Object traceWithinPoint(ProceedingJoinPoint jp) throws Throwable {
         return exec(jp);
     }
 
-    /**
-     * 注解监控拦截处理方法
-     */
-    @Around("@annotation(cn.hc.tool.trace.aspect.HcTrace) || @annotation(org.springframework.scheduling.annotation.Scheduled)")
-    public Object traceAnnoPoint(ProceedingJoinPoint jp) throws Throwable {
-        return exec(jp);
-    }
-
-    private Object exec(ProceedingJoinPoint jp) throws Throwable {
+    protected Object exec(ProceedingJoinPoint jp) throws Throwable {
         String traceId = MDC.get(HcTraceConst.TRACE_ID);
         // 有traceId，直接执行
         if (traceId != null) return jp.proceed();
