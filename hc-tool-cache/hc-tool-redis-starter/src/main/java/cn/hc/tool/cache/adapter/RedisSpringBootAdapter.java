@@ -3,6 +3,7 @@ package cn.hc.tool.cache.adapter;
 import cn.hc.tool.common.util.CollectionUtil;
 import cn.hc.tool.common.util.StringUtil;
 import com.hc.json.adapter.Json;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
  * @version 创建时间：2024/9/15 22:09
  */
 @Component
+@Slf4j
 public class RedisSpringBootAdapter implements CacheAdapter {
 
     @Value("${hc.redis.prefix:}")
@@ -266,22 +268,8 @@ public class RedisSpringBootAdapter implements CacheAdapter {
         return new DefaultRedisScript<>(script, String.class).getSha1();
     }
 
-//    /**
-//     * @param sha
-//     * @param keys
-//     * @param args
-//     * @param readOnly
-//     * @param scriptOutputType
-//     * @return
-//     */
-//    @Override
-//    public Object evalsha(String sha, List<String> keys, List<String> args, boolean readOnly, ScriptOutputType scriptOutputType) {
-//        return redisTemplate.execute(new DefaultRedisScript<>(script, scriptOutputType), keys, args);
-//        return null;
-//    }
-
     @Override
-    public <T> T eval(String script, List<String> keys, List<String> args, boolean readOnly, Class<T> rstType) {
+    public <T> T eval(String script, List<String> keys, Class<T> rstType, Object... args) {
         return redisTemplate.execute(new DefaultRedisScript<>(script, rstType), this.buildKeys(keys), args);
     }
 

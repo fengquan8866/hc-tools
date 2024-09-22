@@ -172,4 +172,17 @@ public class ToolCacheUtilTest {
         val = cacheUtil.get(CacheKey.SKU_INFO, Integer.class, () -> sku + 1, sku);
         log.info("val:{}", val);
     }
+
+    /**
+     * 测试范围：36-40
+     */
+    @Test
+    public void nullCache() {
+        Integer sku = 36;
+        Integer val = cacheUtil.get(CacheKey.SKU_INFO3, Integer.class, () -> null, sku);
+        log.info("val:{}", val);
+        log.info("----------------------------------------------");
+        val = cacheUtil.get(CacheKey.SKU_INFO3, Integer.class, () -> sku + 1, sku);
+        log.info("val:{}", val);
+    }
 }

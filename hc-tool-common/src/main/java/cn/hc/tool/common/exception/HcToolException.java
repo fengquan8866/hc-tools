@@ -13,4 +13,9 @@ public class HcToolException extends RuntimeException {
     public HcToolException(String message) {
         super(message);
     }
+
+    public HcToolException(Throwable cause) {
+        super(cause);
+    }
+
 }

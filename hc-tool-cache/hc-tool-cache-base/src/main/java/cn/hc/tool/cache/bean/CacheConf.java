@@ -1,6 +1,5 @@
 package cn.hc.tool.cache.bean;
 
-import cn.hc.tool.common.util.NumberUtil;
 import cn.hc.tool.config.util.ConfigUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,19 +38,35 @@ public interface CacheConf {
     /**
      * 缓存数据后台自动刷新时间间隔，小于等于0表示不自动刷新（秒）
      */
-    int getUpdate();
+    default int getUpdate() {
+        return this.getExpire();
+    }
 
     /**
-     * 随机时间范围，随机时间范围大于0，则每次获取缓存key时，随机增加0-randomRange秒
+     * 随机时间范围，随机时间范围。如果大于0，则每次获取缓存key时，随机增加0-randomRange秒
      */
-    int getRandomRange();
+    default int getRandom() {
+        return 0;
+    }
+
+    /**
+     * null缓存时间（秒），默认0，不缓存
+     */
+    default int getNullExpire() {
+        return 0;
+    }
+
+    @Deprecated
+    default int getRandomRange() {
+        return this.getRandom();
+    }
 
     /**
      * 初始化
      */
     default void init() {
-        log.info("init k:{}, {}", getConfKey(), this);
-        confMap.put(getConfKey(), this);
+        log.info("init k:{}, {}", this.getConfKey(), this);
+        confMap.put(this.getConfKey(), this);
     }
 
     /**
@@ -61,7 +76,7 @@ public interface CacheConf {
      * @return 缓存key
      */
     default String getFullCacheKey(Object... keyParams) {
-        return MessageFormat.format(getKeyExp(), Arrays.stream(keyParams).map(Objects::toString).toArray());
+        return MessageFormat.format(this.getKeyExp(), Arrays.stream(keyParams).map(Objects::toString).toArray());
     }
 
     /**
@@ -70,32 +85,54 @@ public interface CacheConf {
     default int getExpireSeconds() {
         int expire;
         try {
-            String expireStr = ConfigUtil.get(getConfKey() + "-expire");
-            Integer expireSeconds = NumberUtil.toInteger(expireStr);
-            expire = expireSeconds == null ? getExpire() : expireSeconds;
+            Integer expireSeconds = ConfigUtil.getInteger(this.getConfKey() + "-expire");
+            expire = expireSeconds == null ? this.getExpire() : expireSeconds;
         } catch (Exception e) {
-            log.error("error in get expire from config: {}", getConfKey(), e);
-            expire = getExpire();
+            log.error("error in get expire from config: {}", this.getConfKey(), e);
+            expire = this.getExpire();
         }
-        if (getRandomRange() == 0) return expire;
-        return expire + (int) (Math.random() * getRandomRange());
+        int randomSeconds = this.getRandomSeconds();
+        if (randomSeconds == 0) return expire;
+        return expire + (int) (Math.random() * randomSeconds);
     }
 
     /**
      * 更新时间（支持配置中心配置）
      */
     default int getUpdateSeconds() {
-        int update;
         try {
-            String updateStr = ConfigUtil.get(getConfKey() + "-update");
-            Integer updateSeconds = NumberUtil.toInteger(updateStr);
-            update = updateSeconds == null ? getUpdate() : updateSeconds;
+            Integer updateSeconds = ConfigUtil.getInteger(this.getConfKey() + "-update");
+            return updateSeconds == null ? this.getUpdate() : updateSeconds;
         } catch (Exception e) {
             log.error("error in get update from config: {}", getConfKey(), e);
-            update = getUpdate();
+            return this.getUpdate();
         }
-        if (getRandomRange() == 0) return update;
-        return update + (int) (Math.random() * getRandomRange());
+    }
+
+    /**
+     * 随机时间（支持配置中心动态配置）
+     */
+    default int getRandomSeconds() {
+        try {
+            Integer randomSeconds = ConfigUtil.getInteger(this.getConfKey() + "-random");
+            return randomSeconds == null ? this.getRandom() : randomSeconds;
+        } catch (Exception e) {
+            log.error("error in get random from config: {}", this.getConfKey(), e);
+            return this.getRandom();
+        }
+    }
+
+    /**
+     * null缓存时间（支持配置中心动态配置）
+     */
+    default int getNullExpireSeconds() {
+        try {
+            Integer nullExpireSeconds = ConfigUtil.getInteger(this.getConfKey() + "-null-expire");
+            return nullExpireSeconds == null ? this.getNullExpire() : nullExpireSeconds;
+        } catch (Exception e) {
+            log.error("error in get null expire from config: {}", this.getConfKey(), e);
+            return this.getNullExpire();
+        }
     }
 
     /**

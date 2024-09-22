@@ -91,19 +91,19 @@ public interface CacheAdapter {
 
     public String scriptLoad(String script) throws Exception;
 
-//    public Object evalsha(String sha, List<String> keys, List<String> args, boolean readOnly,
-//                          ScriptOutputType scriptOutputType);
-
     /**
      * scriptLoad + evalsha
      *
-     * @param script
-     * @param keys
-     * @param args
-     * @param readOnly
-     * @param rstType
-     * @return
+     * @param script  脚本
+     * @param keys    脚本的key列表
+     * @param args    脚本的参数列表
+     * @param rstType 返回结果类型
+     * @return 返回结果
      */
-    public <T> T eval(String script, List<String> keys, List<String> args, boolean readOnly, Class<T> rstType);
+    public <T> T eval(String script, List<String> keys, Class<T> rstType, Object... args);
+
+    default <T> T eval(String script, List<String> keys, @Deprecated boolean readOnly, Class<T> rstType, Object... args) {
+        return eval(script, keys, rstType, args);
+    }
 
 }

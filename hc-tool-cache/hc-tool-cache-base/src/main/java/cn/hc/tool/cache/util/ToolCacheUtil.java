@@ -92,7 +92,7 @@ public class ToolCacheUtil {
      * 获取缓存数据
      *
      * @param cacheConf 缓存key枚举
-     * @param vClass     返回类型
+     * @param vClass    返回类型
      * @param keyParams 生成完整缓存key需要的参数
      * @return 结果
      */
@@ -115,11 +115,11 @@ public class ToolCacheUtil {
             return this.call(reloadTask);
         }
         // 3、获取缓存数据
-        CacheData<V> cacheData = getCacheData(key, type);
+        CacheData<V> cacheData = this.getCacheData(key, type);
         if (cacheData != null) {
             // 3.1非CACHE_ONLY策略，异步更新缓存
             if (cacheDegrade != CacheStrategyEnum.CACHE_ONLY) {
-                updateCacheIfNeed(cacheData, key, seconds, autoUpdateSeconds, reloadTask, predicate);
+                updateCacheIfNeed(cacheData, key, seconds, autoUpdateSeconds, cacheConf.getNullExpireSeconds(), reloadTask, predicate);
             }
             return cacheData.getData();
         }
@@ -127,13 +127,13 @@ public class ToolCacheUtil {
         if (cacheDegrade == CacheStrategyEnum.ALL_OPEN) {
             log.info("缓存穿透，开始重新加载数据，key：{}", key);
             V result = getFromTask(key, reloadTask, cacheConf);
-            saveCache(result, key, seconds, predicate);
+            this.saveCache(result, key, seconds, cacheConf.getNullExpireSeconds(), predicate);
             return result;
         }
         log.info("缓存数据为空，key：{}", key);
         // 5、缓存读异步写 策略，异步更新缓存
         if (cacheDegrade == CacheStrategyEnum.CACHE_ONLY_AND_ASYNC_WRITE) {
-            updateCacheIfNeed(null, key, seconds, autoUpdateSeconds, reloadTask, predicate);
+            updateCacheIfNeed(null, key, seconds, autoUpdateSeconds, cacheConf.getNullExpireSeconds(), reloadTask, predicate);
         }
         return null;
     }
@@ -160,7 +160,7 @@ public class ToolCacheUtil {
      */
     public boolean update(CacheConf cacheConf, Object data, Object... keyParams) {
         String key = cacheConf.getFullCacheKey(keyParams);
-        this.saveCache(data, key, cacheConf.getExpireSeconds(), null);
+        this.saveCache(data, key, cacheConf.getExpireSeconds(), cacheConf.getNullExpireSeconds(), null);
         return true;
     }
 
@@ -222,7 +222,7 @@ public class ToolCacheUtil {
                     try {
                         List<K> reloadParam = newList(keyParams);
                         reloadParam.add(k);
-                        updateCacheIfNeed(cacheData, key, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), () -> {
+                        this.updateCacheIfNeed(cacheData, key, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), cacheConf.getNullExpireSeconds(), () -> {
 //                            log.warn("刷新数据： {}", k);
                             List<V> resList = reloadTask.apply(reloadParam);
                             return CollectionUtil.isEmpty(resList) ? null : resList.get(0);
@@ -244,7 +244,7 @@ public class ToolCacheUtil {
             int i = 0;
             for (V e : loadList) {
                 String key = cacheConf.getFullCacheKey(keyFunc.apply(ks.get(i++), e));
-                saveCache(e, key, cacheConf.getExpireSeconds(), predicate);
+                this.saveCache(e, key, cacheConf.getExpireSeconds(), cacheConf.getNullExpireSeconds(), predicate);
             }
         }
         return res;
@@ -300,7 +300,7 @@ public class ToolCacheUtil {
                     try {
                         Set<K> reloadParam = newSet(keyParams);
                         reloadParam.add(k);
-                        updateCacheIfNeed(cacheData, key, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), () -> {
+                        this.updateCacheIfNeed(cacheData, key, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), cacheConf.getNullExpireSeconds(), () -> {
                             List<V> resList = reloadTask.apply(reloadParam);
                             return CollectionUtil.isEmpty(resList) ? null : resList.get(0);
                         }, predicate);
@@ -322,7 +322,7 @@ public class ToolCacheUtil {
             for (K p : ks) {
                 V e = loadList.get(i++);
                 String key = cacheConf.getFullCacheKey(keyFunc.apply(p, e));
-                saveCache(e, key, cacheConf.getExpireSeconds(), predicate);
+                this.saveCache(e, key, cacheConf.getExpireSeconds(), cacheConf.getNullExpireSeconds(), predicate);
             }
         }
         return res;
@@ -415,7 +415,7 @@ public class ToolCacheUtil {
                     try {
                         List<P> reloadParam = newList(keyParams);
                         reloadParam.add(p);
-                        updateCacheIfNeed(cacheData, cacheK, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), () -> {
+                        this.updateCacheIfNeed(cacheData, cacheK, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), cacheConf.getNullExpireSeconds(), () -> {
                             Map<K, V> resMap = reloadTask.apply(reloadParam);
                             return MapUtil.isEmpty(resMap) ? null : new ArrayList<>(resMap.values()).get(0);
                         }, predicate);
@@ -431,14 +431,14 @@ public class ToolCacheUtil {
                 return res;
             }
             log.info("缓存穿透，开始从新加载数据，ks：{}", ks);
-            Map<K, V> loadMap = reloadTask.apply((List<P>) ks);
+            Map<K, V> loadMap = reloadTask.apply(ks);
             if (MapUtil.isEmpty(loadMap)) {
                 return res;
             }
             res.putAll(loadMap);
             for (Map.Entry<K, V> e : loadMap.entrySet()) {
                 String key = cacheConf.getFullCacheKey(cacheKeyFunc.apply(e.getKey(), e.getValue()));
-                saveCache(e.getValue(), key, cacheConf.getExpireSeconds(), predicate);
+                this.saveCache(e.getValue(), key, cacheConf.getExpireSeconds(), cacheConf.getNullExpireSeconds(), predicate);
             }
         }
         return res;
@@ -517,7 +517,7 @@ public class ToolCacheUtil {
                     try {
                         Set<P> reloadParam = newSet(keyParams);
                         reloadParam.add(p);
-                        updateCacheIfNeed(cacheData, cacheK, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), () -> {
+                        this.updateCacheIfNeed(cacheData, cacheK, cacheConf.getExpireSeconds(), cacheConf.getUpdateSeconds(), cacheConf.getNullExpireSeconds(), () -> {
                             Map<K, V> resMap = reloadTask.apply(reloadParam);
                             return MapUtil.isEmpty(resMap) ? null : new ArrayList<>(resMap.values()).get(0);
                         }, predicate);
@@ -540,7 +540,7 @@ public class ToolCacheUtil {
             res.putAll(loadMap);
             for (Map.Entry<K, V> e : loadMap.entrySet()) {
                 String key = cacheConf.getFullCacheKey(cacheKeyFunc.apply(e.getKey(), e.getValue()));
-                saveCache(e.getValue(), key, cacheConf.getExpireSeconds(), predicate);
+                this.saveCache(e.getValue(), key, cacheConf.getExpireSeconds(), cacheConf.getNullExpireSeconds(), predicate);
             }
         }
         return res;
@@ -597,10 +597,11 @@ public class ToolCacheUtil {
      * @param key               缓存的key
      * @param seconds           缓存时间
      * @param autoUpdateSeconds 更新时间
+     * @param nullExpireSeconds null缓存时间
      * @param reloadTask        更新的任务
      * @param predicate         是否缓存的计算规则
      */
-    private <V> void updateCacheIfNeed(final CacheData cacheData, String key, int seconds, int autoUpdateSeconds, Callable<V> reloadTask, Predicate<V> predicate) {
+    private <V> void updateCacheIfNeed(final CacheData cacheData, String key, int seconds, int autoUpdateSeconds, int nullExpireSeconds, Callable<V> reloadTask, Predicate<V> predicate) {
         long currentTs = SystemClock.millisClock().now();
         if (autoUpdateSeconds > 0 && (cacheData == null || (currentTs - cacheData.getLastUpdateTime()) > autoUpdateSeconds * 1000L)) {
 //            log.warn("需要刷新key： {}", key);
@@ -616,7 +617,7 @@ public class ToolCacheUtil {
                 boolean result = cacheAdapter.setStrNxEx(tempKey, "1", 60);
                 if (result) {
                     try {
-                        saveCache(reloadTask.call(), key, seconds, predicate);
+                        this.saveCache(reloadTask.call(), key, seconds, nullExpireSeconds, predicate);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     } finally {
@@ -627,8 +628,8 @@ public class ToolCacheUtil {
         }
     }
 
-    private <V> void saveCache(V result, String key, int seconds, Predicate<V> predicate) {
-        if (result == null) { // TODO 支持null缓存
+    private <V> void saveCache(V result, String key, int seconds, int nullExpireSeconds, Predicate<V> predicate) {
+        if (result == null && nullExpireSeconds <= 0) {
             log.info("需缓存数据为空，清空缓存，key={}", key);
             cacheAdapter.del(key);
             return;
@@ -636,7 +637,7 @@ public class ToolCacheUtil {
         if (predicate == null || predicate.test(result)) {
             try {
                 CacheData<V> cacheData = new CacheData<>(SystemClock.millisClock().now(), result);
-                cacheAdapter.setStrEx(key, Json.toJson(cacheData), seconds);
+                cacheAdapter.setStrEx(key, Json.toJson(cacheData), result == null ? nullExpireSeconds : seconds);
                 log.info("成功加载数据至缓存，key：{}", key);
             } catch (Exception e) {
                 log.error("error in saveCache setRedis, k:{}, s:{}", key, seconds, e);

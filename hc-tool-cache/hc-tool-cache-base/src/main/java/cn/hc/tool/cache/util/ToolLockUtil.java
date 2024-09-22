@@ -54,7 +54,12 @@ public class ToolLockUtil {
                 log.error("回调函数执行失败", e);
                 throw new ToolCacheException(e);
             } finally {
-                toolDCSLock.unLock(cacheConf, traceId, keyParams);
+                boolean unLockRst = toolDCSLock.unLock(cacheConf, traceId, keyParams);
+                if (!unLockRst) {
+                    String fullCacheKey = cacheConf.getFullCacheKey(keyParams);
+                    log.error("解锁失败：{}, {}", cacheConf.getConfKey(), fullCacheKey);
+                    throw new ToolCacheException("解锁失败：" + fullCacheKey);
+                }
             }
         });
     }

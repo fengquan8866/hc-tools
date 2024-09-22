@@ -1,5 +1,7 @@
 package cn.hc.tool.common.util;
 
+import cn.hc.tool.common.exception.HcToolException;
+import cn.hc.tool.common.func.NFunc;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.Callable;
@@ -22,6 +24,41 @@ public class SilentUtil {
             return (RuntimeException) exception;
         } else {
             return new RuntimeException(exception);
+        }
+    }
+
+    /**
+     * 执行无参函数
+     */
+    public static void doWith(NFunc func) {
+        try {
+            func.invoke();
+        } catch (Exception e) {
+            log.error("error in func：{}", e.getMessage());
+        }
+    }
+
+    /**
+     * 执行有参函数
+     */
+    public static <R> R doWith(Callable<R> func) {
+        try {
+            return func.call();
+        } catch (Exception e) {
+            log.error("error in func：{}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 执行有参函数
+     */
+    public static <R> R doWithThrow(Callable<R> func) {
+        try {
+            return func.call();
+        } catch (Exception e) {
+            log.error("error in func：{}", e.getMessage());
+            throw new HcToolException(e);
         }
     }
 

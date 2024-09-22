@@ -10,32 +10,25 @@ import lombok.ToString;
  */
 @Getter
 @ToString
-public enum CacheKey implements CacheConf {
+public enum CacheKey4 implements CacheConf {
     SKU_INFO("sku_info", "sku_info_{0}", Times.FIVE_MINUTE, Times.MINUTE),
     SKU_INFO2("sku_info2", "sku_info2_{0}", Times.FIVE_MINUTE, Times.MINUTE, Times.MINUTE),
-    SKU_INFO3("sku_info3", "sku_info3_{0}", Times.FIVE_MINUTE, Times.MINUTE, Times.MINUTE, 20),
-    LOCK("lock", "lock_{0}", 20),
     ;
 
-    CacheKey(String confKey, String keyExp, int expire) {
-        this(confKey, keyExp, expire, expire);
+    CacheKey4(String confKey, String keyExp, int expire) {
+        this(confKey, keyExp, expire, expire, 0);
     }
 
-    CacheKey(String confKey, String keyExp, int expire, int update) {
+    CacheKey4(String confKey, String keyExp, int expire, int update) {
         this(confKey, keyExp, expire, update, 0);
     }
 
-    CacheKey(String confKey, String keyExp, int expire, int update, int random) {
-        this(confKey, keyExp, expire, update, random, 0);
-    }
-
-    CacheKey(String confKey, String keyExp, int expire, int update, int random, int nullExpire) {
+    CacheKey4(String confKey, String keyExp, int expire, int update, int random) {
         this.confKey = confKey;
         this.keyExp = keyExp;
         this.expire = expire;
         this.update = update;
         this.random = random;
-        this.nullExpire = nullExpire;
         this.init();
     }
 
@@ -53,19 +46,12 @@ public enum CacheKey implements CacheConf {
     private final int expire;
     /**
      * 缓存数据后台自动刷新时间间隔，小于等于0表示不自动刷新（秒）
-     * 可以不要
      */
     private final int update;
 
     /**
      * 随机时间范围
-     * 可以不要
      */
     private final int random;
 
-    /**
-     * null缓存时间
-     * 可以不要
-     */
-    private final int nullExpire;
 }

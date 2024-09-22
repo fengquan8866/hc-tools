@@ -51,22 +51,27 @@ public enum CacheStrategyEnum {
 ### 2.2 枚举
 ```java
 @Getter
+@ToString
 public enum CacheKey implements CacheConf {
-  SKU_INFO("sku_info", "sku_info_{0}", TimeConstant.FIVE_MINUTE_OF_SECOND, TimeConstant.ONE_MINUTE_OF_SECOND),
-  SKU_INFO2("sku_info2", "sku_info2_{0}", TimeConstant.FIVE_MINUTE_OF_SECOND, TimeConstant.ONE_MINUTE_OF_SECOND, TimeConstant.ONE_MINUTE_OF_SECOND),
+  SKU_INFO("sku_info", "sku_info_{0}", Times.FIVE_MINUTE, Times.MINUTE),
+  SKU_INFO2("sku_info2", "sku_info2_{0}", Times.FIVE_MINUTE, Times.MINUTE, Times.MINUTE),
   ;
   CacheKey(String confKey, String keyExp, int expire) {
-    this(confKey, keyExp, expire, expire, 0);
+    this(confKey, keyExp, expire, expire);
   }
   CacheKey(String confKey, String keyExp, int expire, int update) {
     this(confKey, keyExp, expire, update, 0);
   }
-  CacheKey(String confKey, String keyExp, int expire, int update, int randomRange) {
+  CacheKey(String confKey, String keyExp, int expire, int update, int random) {
+    this(confKey, keyExp, expire, update, random, 0);
+  }
+  CacheKey(String confKey, String keyExp, int expire, int update, int random, int nullExpire) {
     this.confKey = confKey;
     this.keyExp = keyExp;
     this.expire = expire;
     this.update = update;
-    this.randomRange = randomRange;
+    this.random = random;
+    this.nullExpire = nullExpire;
     this.init();
   }
   /**
@@ -83,12 +88,19 @@ public enum CacheKey implements CacheConf {
   private final int expire;
   /**
    * 缓存数据后台自动刷新时间间隔，小于等于0表示不自动刷新（秒）
+   * 可以不要
    */
   private final int update;
   /**
    * 随机时间范围
+   * 可以不要
    */
-  private final int randomRange;
+  private final int random;
+  /**
+   * null缓存时间
+   * 可以不要
+   */
+  private final int nullExpire;
 }
 ```
 
@@ -420,12 +432,24 @@ Long val = lockUtil.execute(CacheKey.LOCK_INIT_BIZ_ORG, () -> bizOrgService.init
 
 ### 6.1 接配置中心 动态配置缓存过期时间 `${cacheConf}-expire`
 ```text
-// ducc配置 缓存过期时间1天（精确到秒）
+// 配置 缓存过期时间1天（精确到秒）
 sea_item_category-expire=86400
 ```
 
 ### 6.2 接配置中心 动态配置缓存更新时间 `${cacheConf}-update`
 ```text
-// ducc配置 缓存过期时间5分钟（精确到秒）
+// 配置 缓存过期时间5分钟（精确到秒）
 sea_item_category-update=300
+```
+
+### 6.3 接配置中心 动态配置缓存随机时间 `${cacheConf}-random`
+```text
+// 配置 缓存随机时间60秒
+sea_item_category-random=60
+```
+
+### 6.4 接配置中心 null缓存时间 `${cacheConf}-null-expire`
+```text
+// 配置 null缓存时间10秒
+sea_item_category-null-expire=10
 ```

@@ -27,7 +27,7 @@ public class HcToolCache extends AbstractValueAdaptingCache {
 
     private final ToolCacheUtil toolCacheUtil;
 
-    private Type returnType;
+    private final Type returnType;
 
     public HcToolCache(boolean allowNullValues, String name, ToolCacheUtil toolCacheUtil, Type returnType) {
         super(allowNullValues);

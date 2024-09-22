@@ -6,7 +6,6 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.support.AbstractCacheManager;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -17,10 +16,6 @@ import java.util.Map;
 @Getter
 public class HcCacheManager extends AbstractCacheManager {
     private Map<String, HcToolCache> caches;
-
-//    public <T extends HcToolCache> void addCache(T cache) {
-//        caches.add(cache);
-//    }
 
     @Override
     protected Collection<? extends Cache> loadCaches() {
