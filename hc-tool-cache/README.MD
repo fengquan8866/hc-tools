@@ -155,7 +155,28 @@ StickerVO stickerVO = itemCacheUtil.get(CacheKey.WARE_STICKER_BY_MARKER, Sticker
         () -> stickerJsfService.getWareStickerByMarkIdAndValue(WareMarkConstant.STICKER, sticker), sticker.getId());
 ```
 
-#### 3.1.3 结果数据是否缓存，缓存任务（基于3.1.1，新增判断是否缓存数据结果）
+#### 3.1.3 自定义类型的带缓存任务（基于3.1.2，支持复杂类型：List、Map等）
+* 方法介绍
+```java
+/**
+ * @param cacheConf  缓存key枚举
+ * @param vClass     返回类型
+ * @param reloadTask 缓存未命中加装数据的任务
+ * @param <V>        返回结果数据类型
+ * @return
+ */
+<V> V get(CacheConf cacheConf, Type vClass, Callable<V> reloadTask, Object... keyParams);
+```
+* 使用示例一
+```java
+Integer type = 41;
+List<Integer> val = cacheUtil.get(CacheKey.SKU_INFO3, new TypeToken<List<Integer>>() {}.getType(), () -> {
+  log.info("进入reload");
+  return Arrays.asList(41, 42);
+}, type);
+```
+
+#### 3.1.4 结果数据是否缓存，缓存任务（基于3.1.1，新增判断是否缓存数据结果）
 * 方法介绍
 ```java
 /**
@@ -175,7 +196,7 @@ Integer category = 2;
 Integer val = cacheUtil.get(CacheKey.SEA_ITEM_CATEGORY, () -> category + 1, v -> v > 0, category);
 ```
 
-#### 3.1.4 更新缓存
+#### 3.1.5 更新缓存
 * 方法介绍
 ```java
 /**
@@ -193,7 +214,7 @@ public boolean update(CacheConf cacheConf, Object data, Object... keyParams);
 cacheUtil.update(CacheKey.SEA_ITEM_CATEGORY, category + 1, category);
 ```
 
-#### 3.1.5 删除缓存
+#### 3.1.6 删除缓存
 * 方法介绍
 ```java
 /**
@@ -247,6 +268,23 @@ List<BasicDistrictDTO> rst = cacheUtil.getFromList(CacheKey.DISTRICT_LIST, Basic
 }, codes);
 ```
 
+#### 3.2.2 批量缓存（基于3.2.1，支持复杂类型：List、Map等）
+* 方法介绍
+```java
+/**
+ * 批量缓存
+ *
+ * @param cacheConf  缓存key枚举
+ * @param vClass     返回类型
+ * @param reloadTask 缓存未命中加装数据的任务
+ * @param keyParams  生成完整缓存key需要的参数
+ * @param <K>        加载任务的入参类型
+ * @param <V>        返回结果数据类型
+ * @return List结果集
+ */
+<K, V> List<V> getFromList(CacheConf cacheConf, Type vClass, Function<List<K>, List<V>> reloadTask, List<K> keyParams);
+```
+
 ### 3.3 批量缓存 基于set getListFromSet
 #### 3.3.1 入参Set批量缓存：基于3.2.1，Set维度入参
 * 方法介绍
@@ -282,6 +320,22 @@ List<Integer> val = cacheUtil.getListFromSet(CacheKey.DISTRICT_LIST, BasicFieldD
 }, idSet);
 ```
 
+#### 3.3.2 入参Set批量缓存：基于3.2.2，Set维度入参
+* 方法介绍
+```java
+/**
+ * 批量缓存
+ *
+ * @param cacheConf  缓存key枚举
+ * @param vClass     返回类型
+ * @param reloadTask 缓存未命中加装数据的任务
+ * @param keyParams  生成完整缓存key需要的参数
+ * @param <V>        返回结果数据类型
+ * @param <P>        加载任务的入参类型
+ */
+public <V, P> List<V> getListFromSet(CacheConf cacheConf, Type vClass, Function<Set<P>, List<V>> reloadTask, Set<P> keyParams);
+```
+
 ### 3.4 批量缓存 返回Map getMapFromList
 #### 3.4.1 List2Map批量缓存：基于3.2.1，出参map
 * 方法介绍
@@ -310,6 +364,24 @@ Map<Integer, Integer> val = cacheUtil.getMapFromList(CacheKey.SKU_INFO2, Integer
     }
     return res;
 }, list);
+```
+
+#### 3.4.2 List2Map批量缓存：基于3.2.2，出参map
+* 方法介绍
+```java
+/**
+ * 批量缓存
+ *
+ * @param cacheConf  缓存key枚举
+ * @param vClass     返回类型
+ * @param reloadTask 缓存未命中加装数据的任务
+ * @param keyParams  生成完整缓存key需要的参数
+ * @param <V>        返回结果数据类型
+ * @param <K>        加载任务的入参类型
+ * @return Map<K, V>
+ */
+public <K, V> Map<K, V> getMapFromList(CacheConf cacheConf, Type vClass, Function<List<K>, Map<K, V>> reloadTask,
+                                       List<K> keyParams);
 ```
 
 ### 3.5 批量缓存 返回Map getMapFromSet
@@ -346,6 +418,24 @@ Map<Integer, Integer> val = cacheUtil.getMapFromSet(CacheKey.SKU_INFO2, Integer.
 // 批量缓存赠品
 Map<String, Image> imgMultipleMap = idCacheUtil.getMapFromSet(CacheKey.PRODUCT_IMAGE, Image.class,
         l -> idProductRpc.getSkuImgBySkuId(l), skuIds);
+```
+
+#### 3.5.2 Set2Map批量缓存：同3.4.2，入参Set
+* 方法介绍
+```java
+/**
+ * 批量缓存
+ *
+ * @param cacheConf    缓存key枚举
+ * @param vClass       返回类型
+ * @param reloadTask   缓存未命中加装数据的任务
+ * @param keyParams    生成完整缓存key需要的参数
+ * @param <V>          返回结果数据类型
+ * @param <K>          map的key类型
+ * @return Map<K, V>
+ */
+public <K, V> Map<K, V> getMapFromSet(CacheConf cacheConf, Type vClass, Function<Set<K>, Map<K, V>> reloadTask,
+                                      Set<K> keyParams);
 ```
 
 

@@ -72,6 +72,11 @@
                 <version>${hc.tools.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>cn.hc</groupId>
+                <artifactId>hc-tool-exec</artifactId>
+                <version>${hc.tools.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

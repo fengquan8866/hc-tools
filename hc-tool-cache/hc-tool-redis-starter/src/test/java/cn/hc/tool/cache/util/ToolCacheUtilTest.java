@@ -2,7 +2,7 @@ package cn.hc.tool.cache.util;
 
 import cn.hc.tool.cache.bean.CacheConf;
 import cn.hc.tool.cache.bean.CacheKey;
-import com.hc.json.adapter.Json;
+import com.hc.json.adapter.TypeToken;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Sets;
 import org.junit.Test;
@@ -183,6 +183,24 @@ public class ToolCacheUtilTest {
         log.info("val:{}", val);
         log.info("----------------------------------------------");
         val = cacheUtil.get(CacheKey.SKU_INFO3, Integer.class, () -> sku + 1, sku);
+        log.info("val:{}", val);
+    }
+    /**
+     * 测试范围：41-45
+     */
+    @Test
+    public void getList() {
+        Integer type = 41;
+        List<Integer> val = cacheUtil.get(CacheKey.SKU_INFO3, new TypeToken<List<Integer>>() {}.getType(), () -> {
+            log.info("进入reload");
+            return Arrays.asList(41, 42);
+        }, type);
+        log.info("val:{}", val);
+        log.info("----------------------------------------------");
+        val = cacheUtil.get(CacheKey.SKU_INFO3, new TypeToken<List<Integer>>() {}.getType(), () -> {
+            log.info("进入reload");
+            return Arrays.asList(41, 42);
+        }, type);
         log.info("val:{}", val);
     }
 }
